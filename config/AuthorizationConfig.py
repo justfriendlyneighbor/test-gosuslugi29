@@ -12,14 +12,14 @@ authdata = {
     "snils": "66666666668",
     "email": "rostov@systematic.ru",
     "phone": "1234567890",
-    "firstName": urllib.parse.quote("���������"),
-    "secondName": urllib.parse.quote("��������"),
-    "lastName": urllib.parse.quote("������"),
+    "firstName": urllib.parse.quote("Александр"),
+    "secondName": urllib.parse.quote("Игоревич"),
+    "lastName": urllib.parse.quote("Ростов"),
     "birthDate": "1954-07-12",
-    "birthPlace": urllib.parse.quote("����� ����� ���������"),
+    "birthPlace": urllib.parse.quote("Город герой Ленинград"),
     "ogrn": "1111111111111",
-    "orgName": urllib.parse.quote("������� ����"),
-    "position": urllib.parse.quote("������� �����������"),
+    "orgName": urllib.parse.quote("Типовой СМЭВ"),
+    "position": urllib.parse.quote("Ведущий разработчик"),
     "chief": "true",
     "orgINN": "1111111111",
     "personINN": "410199999936",
@@ -94,5 +94,5 @@ AuthUrl = {
     "headers": [],
     "ssl": False,
 }
-Element = 'p:-soup-contains("�� ������� ��������������")'
-Regex = "������ ��������� ��������"
+Element = 'p:-soup-contains("Вы успешно авторизовались")'
+Regex = "Ростов Александр Игоревич"

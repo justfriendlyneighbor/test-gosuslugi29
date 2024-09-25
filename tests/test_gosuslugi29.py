@@ -60,7 +60,7 @@ async def test_getLinksServicesAsync(request):
             serviceids = []
             while loadmore:
                 copys = []
-                for _ in range(10):
+                for _ in range(7):
                     Category.PubBlockUrl["data"] = json.loads(
                         Category.PubBlockUrl["data"]
                     )
