@@ -1,0 +1,6 @@
+"Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
+"passed","Thu Sep 26 11:39:42 GMT 2024","Thu Sep 26 11:39:43 GMT 2024","1577","tests","test_gosuslugi29","","","","Find Categories",""
+"failed","Thu Sep 26 11:40:23 GMT 2024","Thu Sep 26 11:43:37 GMT 2024","194636","tests","test_gosuslugi29","","","","Find Details per Target",""
+"passed","Thu Sep 26 11:39:54 GMT 2024","Thu Sep 26 11:40:23 GMT 2024","29265","tests","test_gosuslugi29","","","","Find Targets per Service",""
+"passed","Thu Sep 26 11:39:43 GMT 2024","Thu Sep 26 11:39:54 GMT 2024","10278","tests","test_gosuslugi29","","","","Find Services per Category",""
+"passed","Thu Sep 26 11:43:38 GMT 2024","Thu Sep 26 11:43:38 GMT 2024","40","tests","test_gosuslugi29","","","","test_dump_found",""
