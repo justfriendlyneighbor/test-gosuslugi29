@@ -35,7 +35,7 @@ jobs:
       continue-on-error: true
     - name: Test with pytest
       run: |
-        pytest
+        pytest --tb=line
     - name: Load test report history
       uses: actions/checkout@v3
       if: always()
