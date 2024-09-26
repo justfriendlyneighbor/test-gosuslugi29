@@ -343,4 +343,5 @@ async def test_getDetailsTargetsAsync(request, allure_subtests):
 
 def test_dump_found(request):
     with open("results/data.json", "w") as f:
+        allure.attach(json.dumps(request.config.categories).encode(),name='All details collection',attachment_type='application/json')
         json.dump(request.config.categories, f)
