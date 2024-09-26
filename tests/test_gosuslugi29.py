@@ -1,4 +1,4 @@
-import allure, pytest, bs4, lxml, re, json, asyncio, aiohttp, copy, time, urllib
+import allure, pytest, bs4, lxml, re, json, asyncio, aiohttp, copy, time, urllib, allure_subtests
 import config.CatalogConfig as Catalog, config.CategoryConfig as Category, config.ServiceConfig as Service, config.TargetConfig as Target, config.AuthorizationConfig as Authorization
 from utils.utils import *
 
@@ -187,7 +187,7 @@ async def test_getLinksTargetsAsync(request):
 
 @allure.title("Find Details per Target")
 @pytest.mark.asyncio
-async def test_getDetailsTargetsAsync(request, subtests):
+async def test_getDetailsTargetsAsync(request, allure_subtests):
     async with aiohttp.ClientSession() as session:
         for ConfigUrl in [
             Authorization.ListMethods,
@@ -281,7 +281,7 @@ async def test_getDetailsTargetsAsync(request, subtests):
                 await responses
                 # Requestend_time = time.time()
                 for searchresponse in responses.result():
-                    with subtests.test(i=i):
+                    with allure_subtests.test(subtest_name=f"custom message:{i=}"):
                         asserts = []
                         details = {}
                         soup = bs4.BeautifulSoup(searchresponse[0], "lxml")
