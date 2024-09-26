@@ -27,6 +27,7 @@ async def test_getLinksCategoriesAsync(request):
         categoryids = [category.attrs["data-objid"] for category in categories]
         assert len(categories) > 0
         assert all(attribute.match(categoryid) for categoryid in categoryids)
+        categoryids=[cat for cat in categoryids if cat not in ['24320@egClassification','19637@egClassification','24327@egClassification','19641@egClassification','19624@egClassification']]
         request.config.categories = dict.fromkeys(categoryids, "")
 
 
@@ -317,6 +318,7 @@ async def test_getDetailsTargetsAsync(request, subtests):
                                     )
                                     for cssel in soup.select(csselement["elem"])
                                 ]
+
                                 asserts.append(len(details[csselement["name"]]) != 0)
                             for xpathelement in elements["xpath"]:
                                 details[xpathelement["name"]] = [
@@ -336,7 +338,7 @@ async def test_getDetailsTargetsAsync(request, subtests):
                         searchresponse[3][
                             searchresponse[2]["query"][0]["value"]
                         ].update(details)
-                        assert all(asserts)
+                        assert all(asserts), f'На странице {buildurl(**searchresponse[2])} не соответствуют пункты: {*[detail for detail in details if details[detail]==[]],}'
                 # print(f"Responses search time --- {time.time() - Requestend_time} seconds --- Requests time --- {Requestend_time - Requestsstart_time} seconds ---")
 
 

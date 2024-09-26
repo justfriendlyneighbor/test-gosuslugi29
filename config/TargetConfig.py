@@ -32,7 +32,7 @@ serviceType = {
 
 buttonGet = {
     "elem": 'a[class*="btn"][data-behavior*="createOrderModal"],a[class*="btn"][data-behavior*="goto"]',
-    "name": "Получить",
+    "name": "Кнопка Получить/Заполнить заявление",
     "value": "text",
 }
 # buttonAppointment = {'elem':'a[class*="btn"][data-behavior*="preCreateOrderModal"]','name':'Записаться','value':'text'}
@@ -43,7 +43,7 @@ regulationsLink = {
 }
 organization = {
     "elem": 'a[class*="service-organ-link"][data-behavior*="modal"]',
-    "name": "Услугу предоставляет",
+    "name": "Организация предоставляющая услугу",
     "value": "text",
 }
 template = {
@@ -68,17 +68,17 @@ OffMainPageElements = {
 
 deadlineComplete = {
     "elem": 'p:-soup-contains("Срок выполнения услуги")[class*="attr-title"]+div[class*="attr-value"]',
-    "name": "Срок",
+    "name": "Срок выполнения услуги",
     "value": "text",
 }
 cost = {
     "elem": "//*[@id='dataGrpcost']/ancestor::h3/following-sibling::div",
-    "name": "Стоимость",
+    "name": "Стоимость и порядок оплаты",
     "value": "text",
 }
 refusalsElements = {
     "elem": 'p:-soup-contains("Основание для приостановления/отказа")[class*="attr-title"]+ul[class*="b-basic-list-item-body"]>li',
-    "name": "Основание",
+    "name": "Основание для приостановления/отказа",
     "value": "text",
 }
 categoriesElements = {
@@ -88,7 +88,7 @@ categoriesElements = {
 }
 resultsElements = {
     "elem": 'p:-soup-contains("Результат оказания услуги:")[class*="attr-title"]+div[class*="attr-value"]>ul>li',
-    "name": "Результат",
+    "name": "Результат оказания услуги",
     "value": "text",
 }
 
