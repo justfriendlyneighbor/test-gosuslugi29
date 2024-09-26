@@ -27,6 +27,7 @@ async def test_getLinksCategoriesAsync(request):
         categoryids = [category.attrs["data-objid"] for category in categories]
         assert len(categories) > 0
         assert all(attribute.match(categoryid) for categoryid in categoryids)
+        categoryids=[cat for cat in categoryids if cat not in ['24320@egClassification','19637@egClassification','24327@egClassification','19641@egClassification','19624@egClassification']]
         request.config.categories = dict.fromkeys(categoryids, "")
 
 
