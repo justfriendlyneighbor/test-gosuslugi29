@@ -1,8 +1,10 @@
 import allure, pytest, bs4, lxml, re, json, asyncio, aiohttp, copy, time, urllib, allure_subtests
 import config.CatalogConfig as Catalog, config.CategoryConfig as Category, config.ServiceConfig as Service, config.TargetConfig as Target, config.AuthorizationConfig as Authorization
 from utils.utils import *
+from allure_commons.types import Severity
 
 
+@allure.severity(Severity.BLOCKER)
 @allure.title("Тест Категорий")
 @allure.description("Этот тест собирает список категорий услуг на сайте, проверяя доступность страницы категорий и наличия на странице категорий объектов")
 @pytest.mark.asyncio
@@ -33,7 +35,7 @@ async def test_getLinksCategoriesAsync(request):
             assert all(attribute.match(categoryid) for categoryid in categoryids), f'Не все категории на странице соответствуют стандартному представлению, а именно {[categoryid for categoryid in categoryids if attribute.match(categoryid)==None]}'
             request.config.categories = dict.fromkeys(categoryids, "")
 
-
+@allure.severity(Severity.BLOCKER)
 @allure.title("Тест поиска Услуг по Категории")
 @allure.description("Этот тест собирает список услуг по категории на сайте, проверяя доступность страницы категории и наличия на странице категории услуг")
 @pytest.mark.asyncio
@@ -105,7 +107,7 @@ async def test_getLinksServicesAsync(request):
                     loadmore = all(loadmoreelement)
                 request.config.categories[category] = dict.fromkeys(serviceids, "")
 
-
+@allure.severity(Severity.BLOCKER)
 @allure.title("Тест поиска Подуслуг по Услуге")
 @allure.description("Этот тест собирает список подуслуг по услуге на сайте, проверяя доступность страницы услуги и наличия на странице услуги групп подуслуг и входящих в эти группы подуслуг")
 @pytest.mark.asyncio
@@ -129,7 +131,7 @@ async def test_getLinksTargetsAsync(request):
                 for service in request.config.categories[category].keys()
             ]
             for i in range(0, len(urls), n):
-                with allure.step(f"Асинхронно сделать запросы к страницам услуг {urls[i : i + n]}"):
+                with allure.step(f"Асинхронно сделать запросы к страницам услуг {[[query['value'] for query in url['url']['query']] for url in urls[i : i + n]]}"):
                     tasks = [(fetch_url(session, url)) for url in urls[i : i + n]]
                     responses = asyncio.gather(*tasks)
                     await responses
@@ -193,7 +195,7 @@ async def test_getLinksTargetsAsync(request):
                         )
             request.config.categories[category] = serviceandtargetids
 
-
+@allure.severity(Severity.NORMAL)
 @allure.title("Тест поиска проверяемых Параметров по Подуслуге")
 @allure.description("Этот тест авторизуется на сайте, собирает список проверяемых параметров по подуслуге на сайте, проверяя доступность страницы подуслуги и наличия на странице подуслуги проверяемых параметров")
 @pytest.mark.asyncio
@@ -285,7 +287,7 @@ async def test_getDetailsTargetsAsync(request, allure_subtests):
 
             for i in range(0, len(urls), n):
                 # Requestsstart_time = time.time()
-                with allure.step(f"Асинхронно сделать запросы к страницам подуслуг {urls[i : i + n]}"):
+                with allure.step(f"Асинхронно сделать запросы к страницам подуслуг {[[query['value'] for query in url['url']['query']] for url in urls[i : i + n]]}"):
                     tasks = [
                         (fetch_url(session, url[0], url[1])) for url in urls[i : i + n]
                     ]
