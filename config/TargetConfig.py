@@ -31,7 +31,7 @@ serviceType = {
 }
 
 buttonGet = {
-    "elem": 'a[class*="btn"][data-behavior*="createOrderModal"],a[class*="btn"][data-behavior*="goto"]',
+    "elem": 'a[class*="btn"][data-behavior*="createOrderModal"],a[class*="btn"][data-behavior*="goto"],a[class*="btn"][data-behavior*="preCreateOrderModal"]',
     "name": "Кнопка Получить/Заполнить заявление",
     "value": "text",
 }
