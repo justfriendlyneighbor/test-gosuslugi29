@@ -296,7 +296,7 @@ async def test_getDetailsTargetsAsync(request, allure_subtests):
 
             for i in range(0, len(urls), n):
                 # Requestsstart_time = time.time()
-                with allure.step(f"Асинхронно сделать запросы к страницам подуслуг {[[query['value'] for query in url['url']['query']] for url in urls[i : i + n]]}"):
+                with allure.step(f"Асинхронно сделать запросы к страницам подуслуг {[[query['value'] for query in url[0]['url']['query']] for url in urls[i : i + n]]}"):
                     tasks = [
                         (fetch_url(session, url[0], url[1])) for url in urls[i : i + n]
                     ]
