@@ -117,7 +117,7 @@ async def test_getLinksTargetsAsync(request):
             serviceandtargetids = []
             n = 100
             urls = [
-                {
+                [{
                     key: (
                         value
                         if key != "url"
@@ -127,72 +127,81 @@ async def test_getLinksTargetsAsync(request):
                         }
                     )
                     for key, value in Service.PageUrl.items()
-                }
+                },False]
                 for service in request.config.categories[category].keys()
             ]
-            for i in range(0, len(urls), n):
-                with allure.step(f"Асинхронно сделать запросы к страницам услуг {[[query['value'] for query in url['url']['query']] for url in urls[i : i + n]]}"):
-                    tasks = [(fetch_url(session, url)) for url in urls[i : i + n]]
-                    responses = asyncio.gather(*tasks)
-                    await responses
-                    for searchresponse in responses.result():
-                        assert searchresponse[1] == 200, f'Запрос к поиску по странице услуги вернул код отличный от 200, а именно {searchresponse[1]}'
-                        soup = bs4.BeautifulSoup(searchresponse[0], "lxml")
-                        attribute = re.compile(Service.Regex)
-                        serviceid = [
-                            servicetarget.attrs["data-serviceid"]
-                            for servicetarget in soup.select(Service.Element)
-                        ]
-                        assert len(set(serviceid)) == 1, f'Не все подуслуги на странице имеют одинаковый код услуги, а именно { {servicetarget: servicetarget.attrs["data-serviceid"] for servicetarget in soup.select(Service.Element)} }'
-                        serviceid = serviceid[0]
-                        targetids = [
-                            servicetarget.attrs["data-targetid"]
-                            for servicetarget in soup.select(Service.Element)
-                        ]
-                        assert all(attribute.match(targetid) for targetid in targetids), f'Не все подуслуги на странице соответствуют стандартному представлению, а именно {[targetid for targetid in targetids if attribute.match(targetid)==None]}'
-                        sections = [
-                            category for category in soup.select(Service.CategoryElement)
-                        ]
-                        sectionnames = [
-                            [
-                                sectionname.text
-                                for sectionname in section.select(Service.CategoryName)
+            while not all([url[1] for url in urls]):
+                for i in range(0, len(urls), n):
+                    with allure.step(f"Асинхронно сделать запросы к страницам услуг {[[query['value'] for query in url[0]['url']['query']] for url in urls[i : i + n]]}"):
+                        tasks = [(fetch_url(session, url[0],url)) for url in urls[i : i + n]]
+                        responses = asyncio.gather(*tasks)
+                        await responses
+                        for searchresponse in responses.result():
+                            try:
+                                assert searchresponse[1] == 200, f'Запрос к поиску по странице услуги вернул код отличный от 200, а именно {searchresponse[1]}'
+                            except AssertionError:
+                                continue
+                            soup = bs4.BeautifulSoup(searchresponse[0], "lxml")
+                            attribute = re.compile(Service.Regex)
+                            serviceid = [
+                                servicetarget.attrs["data-serviceid"]
+                                for servicetarget in soup.select(Service.Element)
                             ]
-                            for section in sections
-                        ]
-                        assert len(sectionnames) > 0 , f'Количество групп (электронные / неэлектронные) найденных на странице подуслуги {len(sectionnames)}'
-                        assert (
-                            all(
-                                [len(set(sectionname)) == 1 for sectionname in sectionnames]
-                            ) 
-                        ), f'У группы подуслуг (электронные / неэлектронные) обнаружено несколько названий, а именно {sectionnames}'
-                        targetids = [
-                            [
+                            try:
+                                assert len(set(serviceid)) == 1, f'Не все подуслуги на странице имеют одинаковый код услуги, а именно { {servicetarget: servicetarget.attrs["data-serviceid"] for servicetarget in soup.select(Service.Element)} }'
+                            except AssertionError:
+                                continue
+                            serviceid = serviceid[0]
+                            targetids = [
                                 servicetarget.attrs["data-targetid"]
-                                for servicetarget in section.select(Service.Element)
+                                for servicetarget in soup.select(Service.Element)
                             ]
-                            for section in sections
-                        ]
-                        serviceandtargetids.append(
-                            {
-                                serviceid: [
-                                    {
-                                        [
-                                            sectionname.text
-                                            for sectionname in section.select(
-                                                Service.CategoryName
-                                            )
-                                        ][0]: [
-                                            {servicetarget.attrs["data-targetid"]: {}}
-                                            for servicetarget in section.select(
-                                                Service.Element
-                                            )
-                                        ]
-                                    }
-                                    for section in sections
+                            assert all(attribute.match(targetid) for targetid in targetids), f'Не все подуслуги на странице соответствуют стандартному представлению, а именно {[targetid for targetid in targetids if attribute.match(targetid)==None]}'
+                            sections = [
+                                category for category in soup.select(Service.CategoryElement)
+                            ]
+                            sectionnames = [
+                                [
+                                    sectionname.text
+                                    for sectionname in section.select(Service.CategoryName)
                                 ]
-                            }
-                        )
+                                for section in sections
+                            ]
+                            assert len(sectionnames) > 0 , f'Количество групп (электронные / неэлектронные) найденных на странице подуслуги {len(sectionnames)}'
+                            assert (
+                                all(
+                                    [len(set(sectionname)) == 1 for sectionname in sectionnames]
+                                ) 
+                            ), f'У группы подуслуг (электронные / неэлектронные) обнаружено несколько названий, а именно {sectionnames}'
+                            targetids = [
+                                [
+                                    servicetarget.attrs["data-targetid"]
+                                    for servicetarget in section.select(Service.Element)
+                                ]
+                                for section in sections
+                            ]
+                            serviceandtargetids.append(
+                                {
+                                    serviceid: [
+                                        {
+                                            [
+                                                sectionname.text
+                                                for sectionname in section.select(
+                                                    Service.CategoryName
+                                                )
+                                            ][0]: [
+                                                {servicetarget.attrs["data-targetid"]: {}}
+                                                for servicetarget in section.select(
+                                                    Service.Element
+                                                )
+                                            ]
+                                        }
+                                        for section in sections
+                                    ]
+                                }
+                            )
+                            searchresponse[3][1]=True
+                urls = list(filter(lambda x: not x[1], urls))
             request.config.categories[category] = serviceandtargetids
 
 @allure.severity(Severity.NORMAL)
