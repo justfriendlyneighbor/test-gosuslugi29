@@ -1,5 +1,4 @@
 aiohttp==3.8.5
-allure-subtests==0.1.9
 allure_pytest==2.13.5
 allure_python_commons==2.13.5
 beautifulsoup4==4.12.3

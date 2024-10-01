@@ -15,19 +15,11 @@ DetailsPageUrl = {
     "url": {
         "protocol": "https",
         "host": "gosuslugi29.ru",
-        "path": ["pgu", "services", "info", "targets", "details.htm"],
+        "path": ["pgu", "services", "info", "targets", "details-page.htm"],
         "query": [],
     },
     "headers": Headers,
     "ssl": False,
-}
-
-serviceType = {
-    "elem": 'div:-soup-contains-own("Выберите тип получения услуги")>div>span>label',
-    "electronic": "Электронная услуга",
-    "nonelectronic": "Личное посещение ведомства",
-    "name": "Тип получения",
-    "value": "text",
 }
 
 buttonGet = {
@@ -37,7 +29,7 @@ buttonGet = {
 }
 # buttonAppointment = {'elem':'a[class*="btn"][data-behavior*="preCreateOrderModal"]','name':'Записаться','value':'text'}
 regulationsLink = {
-    "elem": 'a[class*="reglament-link"][data-behavior*="download"]',
+    "elem": 'div[class*="modal-actions"]>div[class*="modal-block--reglament"]>div[class*="modal-block-wrapper"]>a[class*="reglament-link"][data-behavior*="download"]',
     "name": "Административный регламент",
     "value": "href",
 }
@@ -47,23 +39,14 @@ organization = {
     "value": "text",
 }
 template = {
-    "elem": '//span[text()="Шаблон"]/ancestor::a',
+    "elem": '//p[@class="attr-title"][text()="Скачать:"]/following-sibling::div[@class="attr-value"]/p/a[@data-behavior="download"]/span[text()="Шаблон для заполнения"]/ancestor::a',
     "name": "Шаблон",
     "value": "href",
 }
 example = {
-    "elem": '//span[text()="Пример"]/ancestor::a',
+    "elem": '//p[@class="attr-title"][text()="Скачать:"]/following-sibling::div[@class="attr-value"]/p/a[@data-behavior="download"]/span[text()="Пример заполнения"]/ancestor::a',
     "name": "Пример",
     "value": "href",
-}
-
-OnMainPageElements = {
-    "css": [buttonGet, regulationsLink, organization],
-    "xpath": [template, example],
-}
-OffMainPageElements = {
-    "css": [regulationsLink, organization],
-    "xpath": [template, example],
 }
 
 deadlineComplete = {
@@ -72,7 +55,7 @@ deadlineComplete = {
     "value": "text",
 }
 cost = {
-    "elem": "//*[@id='dataGrpcost']/ancestor::h3/following-sibling::div",
+    "elem": "//*[@id='dataGrpcost']/ancestor::h3/following-sibling::div/p | //*[@id='dataGrpcost']/ancestor::h3/following-sibling::div/div/div[@data-grpname='__payment']/p[@class='attr-value']",
     "name": "Стоимость и порядок оплаты",
     "value": "text",
 }
@@ -92,7 +75,12 @@ resultsElements = {
     "value": "text",
 }
 
-DetailsPageConfigElements = {
-    "css": [deadlineComplete, refusalsElements, resultsElements],
-    "xpath": [cost, categoriesElements],
+OnDetailsPageConfigElements = {
+    "css": [buttonGet, regulationsLink, organization,deadlineComplete, refusalsElements, resultsElements],
+    "xpath": [template, example, cost, categoriesElements],
+}
+
+OffDetailsPageConfigElements = {
+    "css": [regulationsLink, organization,deadlineComplete, refusalsElements, resultsElements],
+    "xpath": [template, example, cost, categoriesElements],
 }

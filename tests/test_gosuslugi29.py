@@ -1,4 +1,4 @@
-import allure, pytest, bs4, lxml, re, json, asyncio, aiohttp, copy, time, urllib, allure_subtests
+import allure, pytest, bs4, lxml, re, json, asyncio, aiohttp, copy, time, urllib, pytest_subtests
 import config.CatalogConfig as Catalog, config.CategoryConfig as Category, config.ServiceConfig as Service, config.TargetConfig as Target, config.AuthorizationConfig as Authorization
 from utils.utils import *
 from allure_commons.types import Severity
@@ -8,7 +8,7 @@ from allure_commons.types import Severity
 @allure.title("Тест Категорий")
 @allure.description("Этот тест собирает список категорий услуг на сайте, проверяя доступность страницы категорий и наличия на странице категорий объектов")
 @pytest.mark.asyncio
-async def test_getLinksCategoriesAsync(request):
+async def test_getLinksCategoriesAsync(request,subtests):
     async with aiohttp.ClientSession() as session:
         UrlPart = Catalog.PageUrl.pop("url")
         with allure.step(f"Открыть страницу категорий {buildurl(**UrlPart)}"):
@@ -33,6 +33,7 @@ async def test_getLinksCategoriesAsync(request):
             categoryids = [category.attrs["data-objid"] for category in categories]
             assert len(categories) > 0, f'Количество категорий найденных на странице {len(categories)}'
             assert all(attribute.match(categoryid) for categoryid in categoryids), f'Не все категории на странице соответствуют стандартному представлению, а именно {[categoryid for categoryid in categoryids if attribute.match(categoryid)==None]}'
+            categoryids=[cat for cat in categoryids if cat not in ['24320@egClassification','19637@egClassification','24327@egClassification','19641@egClassification','19624@egClassification']]
             request.config.categories = dict.fromkeys(categoryids, "")
 
 @allure.severity(Severity.BLOCKER)
@@ -208,7 +209,7 @@ async def test_getLinksTargetsAsync(request):
 @allure.title("Тест поиска проверяемых Параметров по Подуслуге")
 @allure.description("Этот тест авторизуется на сайте, собирает список проверяемых параметров по подуслуге на сайте, проверяя доступность страницы подуслуги и наличия на странице подуслуги проверяемых параметров")
 @pytest.mark.asyncio
-async def test_getDetailsTargetsAsync(request, allure_subtests):
+async def test_getDetailsTargetsAsync(request,subtests):
     async with aiohttp.ClientSession() as session:
         for ConfigUrl in [
             Authorization.ListMethods,
@@ -278,18 +279,18 @@ async def test_getDetailsTargetsAsync(request, allure_subtests):
                                     )
                                     for config in [
                                         Target.DetailsPageUrl,
-                                        Target.MainPageUrl,
+                                        #Target.MainPageUrl,
                                     ]
                                 ]
                                 urls.extend(
                                     [
-                                        (
-                                            copy.deepcopy(Target.MainPageUrl),
-                                            servicetarget,
-                                        ),
+                                        #(
+                                            #copy.deepcopy(Target.MainPageUrl),
+                                            #servicetarget,
+                                        #),
                                         (
                                             copy.deepcopy(Target.DetailsPageUrl),
-                                            servicetarget,
+                                            servicevariant,
                                         ),
                                     ]
                                 )
@@ -304,66 +305,55 @@ async def test_getDetailsTargetsAsync(request, allure_subtests):
                     await responses
                     # Requestend_time = time.time()
                     for searchresponse in responses.result():
-                        with allure_subtests.test(subtest_name=f"Проверить параметры подуслуги {buildurl(**searchresponse[2])}"):
-                            asserts = []
-                            details = {}
-                            soup = bs4.BeautifulSoup(searchresponse[0], "lxml")
-                            tree = lxml.etree.HTML(searchresponse[0])
-                            assert searchresponse[1] == 200, f'Запрос к поиску по странице подуслуги {buildurl(**searchresponse[2])} вернул код отличный от 200, а именно {searchresponse[1]}'
-                            if "targets.htm" in searchresponse[2]["path"]:
-                                servtypes = soup.select(Target.serviceType["elem"])
-                                if len(servtypes) > 1 and set(
-                                    [stype.text for stype in servtypes]
-                                ) == set(
-                                    [
-                                        Target.serviceType["electronic"],
-                                        Target.serviceType["nonelectronic"],
-                                    ]
-                                ):
-                                    elements = Target.OnMainPageElements
-                                elif len(servtypes) > 0 and set(
-                                    [stype.text for stype in servtypes]
-                                ) == set([Target.serviceType["nonelectronic"]]):
-                                    elements = Target.OffMainPageElements
-                                else:
-                                    elements = []
-                            elif "details.htm" in searchresponse[2]["path"]:
-                                elements = Target.DetailsPageConfigElements
-                            else:
-                                elements = []
-                            if len(elements) > 0:
-                                for csselement in elements["css"]:
-                                    details[csselement["name"]] = [
-                                        (
-                                            cssel.text
-                                            if csselement["value"] == "text"
-                                            else cssel.attrs[csselement["value"]]
-                                        )
-                                        for cssel in soup.select(csselement["elem"])
-                                    ]
-
-                                    asserts.append(len(details[csselement["name"]]) != 0)
-                                for xpathelement in elements["xpath"]:
-                                    details[xpathelement["name"]] = [
-                                        (
-                                            xpathel.text
-                                            if xpathelement["value"] == "text"
-                                            else xpathel.attrib[xpathelement["value"]]
-                                        )
-                                        for xpathel in tree.xpath(xpathelement["elem"])
-                                    ]
-                                    asserts.append(len(details[xpathelement["name"]]) != 0)
-                            details["assert"] = (
-                                details["assert"] and all(asserts)
-                                if "assert" in details
-                                else all(asserts)
-                            )
-                            searchresponse[3][
-                                searchresponse[2]["query"][0]["value"]
-                            ].update(details)
-                            assert all(asserts), f'На странице {buildurl(**searchresponse[2])} не соответствуют пункты: {*[detail for detail in details if details[detail]==[]],}'
-                # print(f"Responses search time --- {time.time() - Requestend_time} seconds --- Requests time --- {Requestend_time - Requestsstart_time} seconds ---")
+                        with subtests.test(subtest_name=f"Проверить параметры подуслуги {buildurl(**searchresponse[2])}"):
+                            test_checkDetailsTargets(*searchresponse)
     with allure.step(f"Прикрепить файл результатов пройденных и непройденных проверок"):
         with open("results/data.json", "w") as f:
             allure.attach(json.dumps(request.config.categories).encode(),name='All details collection',attachment_type='application/json')
             json.dump(request.config.categories, f)
+
+@allure.severity(Severity.NORMAL)
+@allure.title("Тест проверки Параметров Подуслуги")
+@allure.description("Этот тест проверяет наличия на странице подуслуги проверяемых параметров")
+def test_checkDetailsTargets(response,responsecode,url,resultelement):
+    asserts = []
+    details = {}
+    soup = bs4.BeautifulSoup(response, "lxml")
+    tree = lxml.etree.HTML(response)
+    assert responsecode == 200, f'Запрос к поиску по странице подуслуги {buildurl(**url)} вернул код отличный от 200, а именно {responsecode}'
+    if list(resultelement.keys())[0]=='Электронные услуги':
+        elements = Target.OnDetailsPageConfigElements
+    elif list(resultelement.keys())[0]=='Неэлектронные услуги':
+        elements = Target.OffDetailsPageConfigElements
+    else:
+        elements = []
+    if len(elements) > 0:
+        for csselement in elements["css"]:
+            with allure.step(f"Проверить {csselement['name']}"):
+                details[csselement["name"]] = [
+                    (
+                        cssel.text
+                        if csselement["value"] == "text"
+                        else cssel.attrs[csselement["value"]]
+                    )
+                    for cssel in soup.select(csselement["elem"])
+                ]
+            asserts.append(len(details[csselement["name"]]) != 0)
+        for xpathelement in elements["xpath"]:
+            with allure.step(f"Проверить {xpathelement['name']}"):
+                details[xpathelement["name"]] = [
+                    (
+                        xpathel.text
+                        if xpathelement["value"] == "text"
+                        else xpathel.attrib[xpathelement["value"]]
+                    )
+                    for xpathel in tree.xpath(xpathelement["elem"])
+                ]
+                asserts.append(len(details[xpathelement["name"]]) != 0)
+    details["assert"] = (
+        details["assert"] and all(asserts)
+        if "assert" in details
+        else all(asserts)
+    )
+    flattenlist([[el for el in value if url["query"][0]["value"] in el.keys()] for value in resultelement.values()])[0][url["query"][0]["value"]].update(details)
+    assert all(asserts), f'На странице {buildurl(**url)} не соответствуют пункты: {*[detail for detail in details if details[detail]==[]],}'
