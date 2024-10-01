@@ -33,7 +33,6 @@ async def test_getLinksCategoriesAsync(request,subtests):
             categoryids = [category.attrs["data-objid"] for category in categories]
             assert len(categories) > 0, f'Количество категорий найденных на странице {len(categories)}'
             assert all(attribute.match(categoryid) for categoryid in categoryids), f'Не все категории на странице соответствуют стандартному представлению, а именно {[categoryid for categoryid in categoryids if attribute.match(categoryid)==None]}'
-            categoryids=[cat for cat in categoryids if cat not in ['24320@egClassification','19637@egClassification','24327@egClassification','19641@egClassification','19624@egClassification']]
             request.config.categories = dict.fromkeys(categoryids, "")
 
 @allure.severity(Severity.BLOCKER)
