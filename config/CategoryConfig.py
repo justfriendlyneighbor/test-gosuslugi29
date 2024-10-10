@@ -49,6 +49,7 @@ RestTokenUrl = {
     "headers": Headers,
     "ssl": False,
 }
+CategoryServiceMethods=[ListMethods,TokenEnabledUrl,RestTokenUrl]
 PubBlockUrl = {
     "method": "POST",
     "url": {**AjaxUrl, "query": [{"key": "_", "value": "pubblock.renderZone"}]},

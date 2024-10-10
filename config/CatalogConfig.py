@@ -27,4 +27,5 @@ SearchUrl = {
     "ssl": False,
 }
 Element = 'div[class~="t-modal-layout-item"]'
+Attribute= "data-objid"
 Regex = "\d+@egClassification"

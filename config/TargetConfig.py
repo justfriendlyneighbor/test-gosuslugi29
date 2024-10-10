@@ -27,7 +27,6 @@ buttonGet = {
     "name": "Кнопка Получить/Заполнить заявление",
     "value": "text",
 }
-# buttonAppointment = {'elem':'a[class*="btn"][data-behavior*="preCreateOrderModal"]','name':'Записаться','value':'text'}
 regulationsLink = {
     "elem": 'div[class*="modal-actions"]>div[class*="modal-block--reglament"]>div[class*="modal-block-wrapper"]>a[class*="reglament-link"][data-behavior*="download"]',
     "name": "Административный регламент",
