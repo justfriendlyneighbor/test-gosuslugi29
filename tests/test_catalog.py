@@ -57,6 +57,5 @@ def test_category(request,categories,allure_subtests):
     for category in categories:
         with allure_subtests.test(subtest_name=f"Проверить категорию {category}"):
              assert re.compile(Catalog.Regex).match(category), f'Категория {category} не соответствует стандартному представлению'
-        pytest.skip("Completed succesfully, skipping from report")
     request.config.categories = dict.fromkeys(categories, "")
     pytest.skip("Completed succesfully, skipping from report")
