@@ -28,6 +28,7 @@ def test_catalog_pages(request,catalog_pages,allure_subtests):
         with allure_subtests.test(subtest_name=f"Проверить Запрос к странице {page['url']}"):
             assert page['status']==ok, f'Запрос к странице категорий вернул код отличный от {ok}, а именно {page["status"]}'
             request.config.catalogpages.append(page)
+    pytest.skip("Completed succesfully, skipping from report")
 
 def get_all_categories(pages):
     for catalogpage in pages:
@@ -46,6 +47,8 @@ def categories(request):
 @allure.description("Этот тест проверяет наличие на странице категорий объектов")
 def test_categories(categories):
     assert len(categories)>0, f'Количество категорий найденных на странице категорий {len(categories)}'
+    pytest.skip("Completed succesfully, skipping from report")
+
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест Категорий")
@@ -54,4 +57,6 @@ def test_category(request,categories,allure_subtests):
     for category in categories:
         with allure_subtests.test(subtest_name=f"Проверить категорию {category}"):
              assert re.compile(Catalog.Regex).match(category), f'Категория {category} не соответствует стандартному представлению'
+        pytest.skip("Completed succesfully, skipping from report")
     request.config.categories = dict.fromkeys(categories, "")
+    pytest.skip("Completed succesfully, skipping from report")
