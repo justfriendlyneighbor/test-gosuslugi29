@@ -41,16 +41,18 @@ async def service_pages(request):
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест доступности Подуслуг по Услуге")
 @allure.description("Этот тест проверяет доступность страниц услуг")
-def test_service_pages(request,service_pages,allure_subtests):
+def test_service_pages(request,service_pages,check):
     ok = 200
     for category,pages in service_pages.items():
         for page in pages:
-            with allure_subtests.test(subtest_name=f'Проверить Запрос к странице {page["url"]}'):
-                assert page['status']==ok, f'Запрос к поиску по странице категории {page["url"]} вернул код отличный от {ok}, а именно {page["status"]}' 
-                if request.config.servicepages.get(category)==None:
-                    request.config.servicepages[category]=[page]
-                else:
-                    request.config.servicepages[category].append(page)
+            with check:
+                with allure.step(f'Проверить Запрос к странице {page["url"]}'):
+                    assert page['status']==ok, f'Запрос к поиску по странице категории {page["url"]} вернул код отличный от {ok}, а именно {page["status"]}' 
+                    if request.config.servicepages.get(category)==None:
+                        request.config.servicepages[category]=[page]
+                    else:
+                        request.config.servicepages[category].append(page)
+    pytest.skip("Completed succesfully, skipping from report")
 
 def get_serviceitargetids(pages):
     categoryservices={}
@@ -76,32 +78,39 @@ def allserviceitargetids(request):
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест наличия групп Подуслуг по Услуге")
 @allure.description("Этот тест проверяет наличие на страницах услуг групп подуслуг")
-def test_service_section_names(allserviceitargetids,allure_subtests):
+def test_service_section_names(allserviceitargetids,check):
     for _,serviceids in allserviceitargetids.items():
         for serviceid,service in serviceids.items():
-            with allure_subtests.test(subtest_name=f"Проверить услугу {serviceid}"):
-                assert len(service['sections']) > 0 , f'Количество групп (электронные / неэлектронные) найденных на странице подуслуги {len(service["sections"])}'
+            with check:
+                with allure.step(f"Проверить услугу {serviceid}"):
+                    assert len(service['sections']) > 0 , f'Количество групп (электронные / неэлектронные) найденных на странице подуслуги {len(service["sections"])}'
+    pytest.skip("Completed succesfully, skipping from report")
+
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест групп Подуслуг по Услуге")
 @allure.description("Этот тест проверяет группы подуслуг на стандартное представление")
-def test_service_section_name(allserviceitargetids,allure_subtests):
+def test_service_section_name(allserviceitargetids,check):
     for _,serviceids in allserviceitargetids.items():
         for serviceid,service in serviceids.items():
-            with allure_subtests.test(subtest_name=f"Проверить услугу {serviceid}"):
-                assert (all([len(set(sectionname)) == 1 for sectionname in service['sections']]) ), f'У группы подуслуг (электронные / неэлектронные) обнаружено несколько названий, а именно {service["sections"]}'
-                service.pop('sections', None)
+            with check:
+                with allure.step(f"Проверить услугу {serviceid}"):
+                    assert (all([len(set(sectionname)) == 1 for sectionname in service['sections']]) ), f'У группы подуслуг (электронные / неэлектронные) обнаружено несколько названий, а именно {service["sections"]}'
+                    service.pop('sections', None)
+    pytest.skip("Completed succesfully, skipping from report")
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест Подуслуг по Услуге")
 @allure.description("Этот тест проверяет подуслуги на стандартное представление")
-def test_service_target(request,allserviceitargetids,allure_subtests):
+def test_service_target(request,allserviceitargetids,check):
     attribute = re.compile(Service.Regex)
     for categoryid,serviceids in allserviceitargetids.items():
         for serviceid,service in serviceids.items():
             for _,targets in service.items():
                 for target in targets:
                     for targetname in target:
-                        with allure_subtests.test(subtest_name=f"Проверить подуслугу {targetname}"):
-                            assert attribute.match(targetname), f'Подуслуга {targetname} не соответствует стандартному представлению'
+                        with check:
+                            with allure.step(f"Проверить подуслугу {targetname}"):
+                                assert attribute.match(targetname), f'Подуслуга {targetname} не соответствует стандартному представлению'
             request.config.categories[categoryid][serviceid] = service
+    pytest.skip("Completed succesfully, skipping from report")

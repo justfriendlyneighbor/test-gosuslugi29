@@ -1,4 +1,4 @@
-import allure, pytest, bs4, re, json, asyncio, aiohttp, copy, functools, pytest_aiohttp, functools,itertools
+import allure, pytest, bs4, re, json, asyncio, aiohttp, copy, functools, pytest_aiohttp, functools, itertools
 import config.CategoryConfig as Category
 from utils.utils import *
 from allure_commons.types import Severity
@@ -15,7 +15,7 @@ async def get_category_service_pages(session):
     return ajaxpages
 
 def update_category_services(pages):
-    CSRFpattern = re.compile("\w{32}")
+    CSRFpattern = re.compile(r"\w{32}")
     for catalogpage in pages:
          if is_json(catalogpage['text']):
             jsonres = json.loads(catalogpage['text'])
@@ -66,27 +66,32 @@ async def category_pages(request):
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест доступности вспомогательных страниц для Категорий")
 @allure.description("Этот тест проверяет доступность страницы вспомогательных страниц для доступа к категориям")
-def test_category_service_pages(request,category_pages,allure_subtests):
+def test_category_service_pages(request,category_pages,check):
     ok = 200
     for page in category_pages['ajax']:
-        with allure_subtests.test(subtest_name=f"Проверить Запрос к странице {page['url']}"):
-            assert page['status']==ok, f'Запрос {page["url"]} для получения доступа к странице категории вернул код отличный от {ok}, а именно {page["status"]}' 
+        with check:
+            with allure.step(f"Проверить Запрос к странице {page['url']}"):
+                assert page['status']==ok, f'Запрос {page["url"]} для получения доступа к странице категории вернул код отличный от {ok}, а именно {page["status"]}'
+    pytest.skip("Completed succesfully, skipping from report")
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест получения токена для Категорий")
 @allure.description("Этот тест проверяет получение токена для доступа к категориям")
 def test_category_services(category_pages):
     assert Category.Headers["X-CSRF-Token"] != "Fetch", f'Не удалось получить CSRF-токен, список заголовков - {Category.Headers}'
+    pytest.skip("Completed succesfully, skipping from report")
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест доступности Услуг по Категории")
 @allure.description("Этот тест проверяет доступность страниц категорий")
-def test_category_pages(request,category_pages,allure_subtests):
+def test_category_pages(request,category_pages,check):
     ok = 200
     for page in category_pages['category']:
-        with allure_subtests.test(subtest_name=f'Проверить Запрос к странице {page["url"]}'):
-            assert page['status']==ok, f'Запрос к поиску по странице категории {page["url"]} вернул код отличный от {ok}, а именно {page["status"]}' 
-            request.config.categorypages.append(page)
+        with check:
+            with allure.step(f'Проверить Запрос к странице {page["url"]}'):
+                assert page['status']==ok, f'Запрос к поиску по странице категории {page["url"]} вернул код отличный от {ok}, а именно {page["status"]}' 
+                request.config.categorypages.append(page)
+    pytest.skip("Completed succesfully, skipping from report")
 
 def get_serviceids(pages):
     serviceids={}
@@ -98,7 +103,6 @@ def get_serviceids(pages):
             serviceids[categorypage['category']].extend([service.attrs["data-pgu-service"] for service in soup.select(Category.Element)])
     unique=functools.reduce(set.union, (itertools.starmap(set.symmetric_difference, itertools.combinations(map(set, serviceids.values()), 2))))
     [[unique.remove(service) if service in unique else services.remove(service) for service in services[:]] for services in serviceids.values()]
-    print(functools.reduce(lambda count, l: count + len(l), serviceids.values(), 0))
     return serviceids
 
 @pytest.fixture
@@ -108,10 +112,12 @@ def allserviceids(request):
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест Услуг по Категории")
 @allure.description("Этот тест проверяет объекты услуг на стандартное представление")
-def test_service(request,allserviceids,allure_subtests):
+def test_service(request,allserviceids,check):
     attribute = re.compile(Category.Regex)
     for categoryid,serviceids in allserviceids.items():
         for serviceid in serviceids:
-            with allure_subtests.test(subtest_name=f"Проверить услугу {serviceid}"):
-                assert attribute.match(serviceid), f'Услуга {serviceid} не соответствует стандартному представлению'
+            with check:
+                with allure.step(f"Проверить услугу {serviceid}"):
+                    assert attribute.match(serviceid), f'Услуга {serviceid} не соответствует стандартному представлению'
         request.config.categories[categoryid] = dict.fromkeys(serviceids, {})
+    pytest.skip("Completed succesfully, skipping from report")

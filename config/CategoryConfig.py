@@ -77,5 +77,5 @@ PubBlockUrl = {
     "ssl": False,
 }
 Element = 'div[class~="g-tile"][data-pgu-service*="@egService"]'
-Regex = "\d+@egService"
+Regex = r"\d+@egService"
 LoadMoreElement = 'a[class*="btn"][data-behavior*="getMoreTiles"]'

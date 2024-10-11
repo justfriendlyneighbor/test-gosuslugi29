@@ -28,4 +28,4 @@ SearchUrl = {
 }
 Element = 'div[class~="t-modal-layout-item"]'
 Attribute= "data-objid"
-Regex = "\d+@egClassification"
+Regex = r"\d+@egClassification"

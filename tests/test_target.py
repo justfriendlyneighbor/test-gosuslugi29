@@ -14,7 +14,7 @@ async def get_target_service_pages(session):
     return ajaxpages
 
 def update_target_services(pages):
-    CSRFpattern = re.compile("\w{32}")
+    CSRFpattern = re.compile(r"\w{32}")
     for catalogpage in pages:
         if is_json(catalogpage['text']):
             jsonres = json.loads(catalogpage['text'])
@@ -74,57 +74,69 @@ async def target_pages(request):
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест доступности вспомогательных страниц для Авторизации для теста Параметров по Подуслуге")
 @allure.description("Этот тест проверяет доступность вспомогательных страниц для доступа к авторизации")
-def test_target_service_pages(request,target_pages,allure_subtests):
+def test_target_service_pages(request,target_pages,check):
     ok = 200
     for page in target_pages['ajax']:
-        with allure_subtests.test(subtest_name=f"Проверить Запрос к странице {page['url']}"):
-            assert page['status']==ok, f'Запрос {page["url"]} для получения доступа к странице авторизации вернул код отличный от {ok}, а именно {page["status"]}' 
+        with check:
+            with allure.step(f"Проверить Запрос к странице {page['url']}"):
+                assert page['status']==ok, f'Запрос {page["url"]} для получения доступа к странице авторизации вернул код отличный от {ok}, а именно {page["status"]}'
+    pytest.skip("Completed succesfully, skipping from report")
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест получения токена для Авторизации для теста Параметров по Подуслуге")
 @allure.description("Этот тест проверяет получение токена для доступа к авторизации")
 def test_target_services(target_pages):
     assert Authorization.Headers["X-CSRF-Token"] != "Fetch", f'Не удалось получить CSRF-токен, список заголовков - {Authorization.Headers}'
+    pytest.skip("Completed succesfully, skipping from report")
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест доступности страницы Авторизации для теста Параметров по Подуслуге")
 @allure.description("Этот тест проверяет доступность страницы авторизации")
-def test_target_authorization_pages(request,target_pages,allure_subtests):
+def test_target_authorization_pages(request,target_pages,check):
     ok = 200
     for page in target_pages['auth']:
-        with allure_subtests.test(subtest_name=f"Проверить Запрос к странице {page['url']}"):
-            assert page['status']==ok, f'Запрос {page["url"]} для авторизации вернул код отличный от {ok}, а именно {page["status"]}' 
+        with check:
+            with allure.step(f"Проверить Запрос к странице {page['url']}"):
+                assert page['status']==ok, f'Запрос {page["url"]} для авторизации вернул код отличный от {ok}, а именно {page["status"]}'
+    pytest.skip("Completed succesfully, skipping from report")
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест наличия Авторизации для теста Параметров по Подуслуге")
 @allure.description("Этот тест проверяет наличие записей об авторизации на странице авторизации")
-def test_target_authorization(request,target_pages,allure_subtests):
+def test_target_authorization(request,target_pages,check):
     for page in target_pages['auth']:
-        with allure_subtests.test(subtest_name=f"Проверить Запрос к странице {page['url']}"):
-            soup = bs4.BeautifulSoup(page['text'], "lxml")
-            testauth = soup.select(Authorization.Element)
-            assert len(set(testauth)) == 1, f'Количество записей об успешной авторизации найденных на странице не 1, а {len(set(testauth))}'
+        with check:
+            with allure.step(f"Проверить Запрос к странице {page['url']}"):
+                soup = bs4.BeautifulSoup(page['text'], "lxml")
+                testauth = soup.select(Authorization.Element)
+                assert len(set(testauth)) == 1, f'Количество записей об успешной авторизации найденных на странице не 1, а {len(set(testauth))}'
+    pytest.skip("Completed succesfully, skipping from report")
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест Авторизации для теста Параметров по Подуслуге")
 @allure.description("Этот тест проверяет успешность авторизации в качестве заданного пользователя")
-def test_target_authorization_correct(request,target_pages,allure_subtests):
+def test_target_authorization_correct(request,target_pages,check):
     for page in target_pages['auth']:
-        with allure_subtests.test(subtest_name=f"Проверить Запрос к странице {page['url']}"):
-            soup = bs4.BeautifulSoup(page['text'], "lxml")
-            testauth = soup.select(Authorization.Element)
-            assert Authorization.Regex in urllib.parse.unquote(testauth[0].text), f'Текст записи об успешной авторизации не соответствует стандратному тексту для заданного пользователя, а именно {testauth[0].text}'
+        with check:
+            with allure.step(f"Проверить Запрос к странице {page['url']}"):
+                soup = bs4.BeautifulSoup(page['text'], "lxml")
+                testauth = soup.select(Authorization.Element)
+                assert Authorization.Regex in urllib.parse.unquote(testauth[0].text), f'Текст записи об успешной авторизации не соответствует стандратному тексту для заданного пользователя, а именно {testauth[0].text}'
+    pytest.skip("Completed succesfully, skipping from report")
+
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест доступности Параметров по Подуслуге")
 @allure.description("Этот тест проверяет доступность страниц подуслуг")
-def test_target_pages(request,target_pages,allure_subtests):
+def test_target_pages(request,target_pages,check):
     ok = 200
     for _,pages in target_pages['target'].items():
         for page in pages:
-            with allure_subtests.test(subtest_name=f'Проверить Запрос к странице {page["url"]}'):
-                assert page['status']==ok, f'Запрос к странице подуслуги {page["url"]} вернул код отличный от {ok}, а именно {page["status"]}' 
-                request.config.targetpages.append(page)
+            with check:
+                with allure.step(f'Проверить Запрос к странице {page["url"]}'):
+                    assert page['status']==ok, f'Запрос к странице подуслуги {page["url"]} вернул код отличный от {ok}, а именно {page["status"]}' 
+                    request.config.targetpages.append(page)
+    pytest.skip("Completed succesfully, skipping from report")
 
 def get_targetdetails(pages):
     categoryservicestargets={}

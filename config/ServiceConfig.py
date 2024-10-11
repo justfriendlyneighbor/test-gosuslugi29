@@ -13,4 +13,4 @@ PageUrl = {
 CategoryElement = 'section[class~="b-basic-list"]'
 CategoryName = 'h3[class~="b-basic-list-title"]'
 Element = 'a[class~="service-procedure-title"]'
-Regex = "\d+@egServiceTarget"
+Regex = r"\d+@egServiceTarget"

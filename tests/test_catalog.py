@@ -22,12 +22,13 @@ async def catalog_pages(request):
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест доступности Категорий")
 @allure.description("Этот тест проверяет доступность страницы категорий")
-def test_catalog_pages(request,catalog_pages,allure_subtests):
+def test_catalog_pages(request,catalog_pages,check):
     ok = 200
     for page in catalog_pages:
-        with allure_subtests.test(subtest_name=f"Проверить Запрос к странице {page['url']}"):
-            assert page['status']==ok, f'Запрос к странице категорий вернул код отличный от {ok}, а именно {page["status"]}'
-            request.config.catalogpages.append(page)
+        with check:
+            with allure.step(f"Проверить Запрос к странице {page['url']}"):
+                assert page['status']==ok, f'Запрос к странице категорий вернул код отличный от {ok}, а именно {page["status"]}'
+                request.config.catalogpages.append(page)
     pytest.skip("Completed succesfully, skipping from report")
 
 def get_all_categories(pages):
@@ -53,9 +54,10 @@ def test_categories(categories):
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест Категорий")
 @allure.description("Этот тест проверяет объекты категорий на стандартное представление")
-def test_category(request,categories,allure_subtests):
+def test_category(request,categories,check):
     for category in categories:
-        with allure_subtests.test(subtest_name=f"Проверить категорию {category}"):
-             assert re.compile(Catalog.Regex).match(category), f'Категория {category} не соответствует стандартному представлению'
+        with check:
+            with allure.step(f"Проверить категорию {category}"):
+                assert re.compile(Catalog.Regex).match(category), f'Категория {category} не соответствует стандартному представлению'
     request.config.categories = dict.fromkeys(categories, "")
     pytest.skip("Completed succesfully, skipping from report")
