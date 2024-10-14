@@ -1,4 +1,4 @@
-import json,aiohttp,asyncio,random
+import json, aiohttp, asyncio, random
 
 
 def flattenlist(lst):
@@ -42,10 +42,10 @@ async def fetch_url(session, req, data=None):
             req["url"] = UrlPart
             return (await response.text(), response.status, UrlPart, data)
     except aiohttp.client_exceptions.ClientOSError as e:
-                await asyncio.sleep(3 + random.randint(0, 9))
-                async with session.request(**req, url=buildurl(**UrlPart)) as response:
-                    req["url"] = UrlPart
-                    return (await response.text(), response.status, UrlPart, data)
+        await asyncio.sleep(3 + random.randint(0, 9))
+        async with session.request(**req, url=buildurl(**UrlPart)) as response:
+            req["url"] = UrlPart
+            return (await response.text(), response.status, UrlPart, data)
     except Exception as e:
         result = str(e)
-    return (result,0, UrlPart, data)
+    return (result, 0, UrlPart, data)

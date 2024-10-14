@@ -82,7 +82,7 @@ TokenUrl = {
     "headers": Headers,
     "ssl": False,
 }
-AuthorizationServiceMethods=[ListMethods,TokenEnabledUrl,RestTokenUrl,TokenUrl]
+AuthorizationServiceMethods = [ListMethods, TokenEnabledUrl, RestTokenUrl, TokenUrl]
 AuthUrl = {
     "method": "POST",
     "url": {

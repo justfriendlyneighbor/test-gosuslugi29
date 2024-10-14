@@ -75,11 +75,24 @@ resultsElements = {
 }
 
 OnDetailsPageConfigElements = {
-    "css": [buttonGet, regulationsLink, organization,deadlineComplete, refusalsElements, resultsElements],
+    "css": [
+        buttonGet,
+        regulationsLink,
+        organization,
+        deadlineComplete,
+        refusalsElements,
+        resultsElements,
+    ],
     "xpath": [template, example, cost, categoriesElements],
 }
 
 OffDetailsPageConfigElements = {
-    "css": [regulationsLink, organization,deadlineComplete, refusalsElements, resultsElements],
+    "css": [
+        regulationsLink,
+        organization,
+        deadlineComplete,
+        refusalsElements,
+        resultsElements,
+    ],
     "xpath": [template, example, cost, categoriesElements],
 }
