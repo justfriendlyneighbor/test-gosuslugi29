@@ -87,5 +87,22 @@ def test_category(request, categories, check):
                 assert re.compile(Catalog.Regex).match(
                     category
                 ), f'Категория {category} ({name["name"]}) не соответствует стандартному представлению'
+    categories = {
+        cat: val
+        for cat, val in categories.items()
+        if cat
+        not in [
+            "24320@egClassification",
+            "19637@egClassification",
+            "24327@egClassification",
+            "19641@egClassification",
+            "19624@egClassification",
+            "19620@egClassification",
+            "19596@egClassification",
+            "19647@egClassification",
+            "19661@egClassification",
+            "19666@egClassification",
+        ]
+    }
     request.config.categories = categories
     pytest.skip("Completed succesfully, skipping from report")

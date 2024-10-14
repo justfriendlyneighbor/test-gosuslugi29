@@ -105,7 +105,7 @@ async def get_target_pages(session, categories):
                             )
         for i in range(0, len(urls), n):
             with allure.step(
-                f"Асинхронно сделать {n} запросов с {i} по {i+n} к страницам услуг"
+                f"Асинхронно сделать {n} запросов с {i} по {i+n} к страницам подуслуг"
             ):
                 tasks = [
                     (fetch_url(session, url[0], url[1])) for url in urls[i : i + n]

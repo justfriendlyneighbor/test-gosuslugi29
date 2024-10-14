@@ -117,13 +117,13 @@ def get_serviceitargetids(pages):
                                         [
                                             namespan.text
                                             for namespan in servicetarget.select(
-                                                'span[class~="service-procedure-target-link"]'
+                                                Service.ElementName
                                             )
                                         ]
                                     )
                                 }
+                                for servicetarget in section.select(Service.Element)
                             }
-                            for servicetarget in section.select(Service.Element)
                         }
                     )
                     sectarg["sections"].append(sectionnames)
