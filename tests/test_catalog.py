@@ -8,9 +8,8 @@ async def catalog_pages(request):
     async with aiohttp.ClientSession() as session:
         catalogpages=[]
         for category in [Catalog.PageUrl, Catalog.SearchUrl]:
-            with allure.step(f"Открыть страницу категорий"):
-                UrlPart = category.pop("url")
-                allure.dynamic.parameter("URL",buildurl(**UrlPart))
+            UrlPart = category.pop("url")
+            with allure.step(f"Открыть страницу категорий {buildurl(**UrlPart)}"):
                 response = await session.request(
                     **category, url=buildurl(**UrlPart)
                 )
@@ -36,18 +35,20 @@ def get_all_categories(pages):
         if 'search' in catalogpage['url']:
             soup = bs4.BeautifulSoup(catalogpage['text'], "lxml")
             categories = soup.select(Catalog.Element)
-            categoryids = [category.attrs[Catalog.Attribute] for category in categories]
+            categoryids = {category.attrs[Catalog.Attribute]:{'name':' '.join([span.text for span in category.select('h2>span>span[class="js-word"]')])} for category in categories}
             return categoryids
 
 @pytest.fixture
 def categories(request):
-    return get_all_categories(request.config.catalogpages)
+    with allure.step(f"Получить список всех категорий"):
+        return get_all_categories(request.config.catalogpages)
 
 @allure.severity(Severity.BLOCKER)
 @allure.title("Тест наличия Категорий")
 @allure.description("Этот тест проверяет наличие на странице категорий объектов")
 def test_categories(categories):
-    assert len(categories)>0, f'Количество категорий найденных на странице категорий {len(categories)}'
+    with allure.step(f"Количество категорий {len(categories)}"):
+        assert len(categories)>0, f'Количество категорий найденных на странице категорий {len(categories)}'
     pytest.skip("Completed succesfully, skipping from report")
 
 
@@ -55,9 +56,10 @@ def test_categories(categories):
 @allure.title("Тест Категорий")
 @allure.description("Этот тест проверяет объекты категорий на стандартное представление")
 def test_category(request,categories,check):
-    for category in categories:
+    for category,name in categories.items():
         with check:
-            with allure.step(f"Проверить категорию {category}"):
-                assert re.compile(Catalog.Regex).match(category), f'Категория {category} не соответствует стандартному представлению'
-    request.config.categories = dict.fromkeys(categories, "")
+            with allure.step(f"Проверить категорию {category} ({name['name']})"):
+                assert re.compile(Catalog.Regex).match(category), f'Категория {category} ({name["name"]}) не соответствует стандартному представлению'
+    categories={cat:val for cat,val in categories.items() if cat not in ['24320@egClassification','19637@egClassification','24327@egClassification','19641@egClassification','19624@egClassification','19620@egClassification','19596@egClassification','19647@egClassification','19661@egClassification','19666@egClassification']}
+    request.config.categories = categories
     pytest.skip("Completed succesfully, skipping from report")
