@@ -6,8 +6,11 @@ AjaxUrl = {
     "path": ["util", "ajaxRpc.sx"],
 }
 token = ""
+FLCategory = "FL"
+ULCategory = "UL"
+IPCategory = "IP"
 authdata = {
-    "citizenCategory": "FL",
+    "citizenCategory": FLCategory,
     "authType": "PWD",
     "snils": "66666666668",
     "email": "rostov@systematic.ru",

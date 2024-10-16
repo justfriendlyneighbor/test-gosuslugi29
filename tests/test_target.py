@@ -233,7 +233,7 @@ def test_target_pages(request, target_pages, check):
     pytest.skip("Completed succesfully, skipping from report")
 
 
-def get_targetdetails(pages, categories):
+def get_targetdetails(pages, categories, retry):
     for page in pages:
         with allure.step(
             f"Выделить параметры на странице услуги {buildurl(**page['url'])}"
@@ -275,13 +275,64 @@ def get_targetdetails(pages, categories):
                 if "assert" in details
                 else all(asserts)
             )
+            if (
+                not details["assert"]
+                and details.get("Кнопка Получить/Заполнить заявление") != None
+                and len(details["Кнопка Получить/Заполнить заявление"]) == 0
+            ):
+                if retry.get(category) != None:
+                    retry[category].update(
+                        {service: copy.deepcopy(categories[category][service])}
+                    )
+                else:
+                    retry.update(
+                        {
+                            category: {
+                                "name": categories[category]["name"],
+                                service: copy.deepcopy(categories[category][service]),
+                            }
+                        }
+                    )
             categories[category][service][variant][target].update(details)
     return categories
 
 
 @pytest.fixture(scope="session")
-def alltargetdetails(request):
-    get_targetdetails(request.config.targetpages, request.config.categories)
+async def alltargetdetails(request):
+    get_targetdetails(
+        request.config.targetpages,
+        request.config.categories,
+        request.config.categoriesretry,
+    )
+    for citizenship in [Authorization.ULCategory, Authorization.IPCategory]:
+        pages = {"ajax": [], "auth": [], "target": []}
+        authorizationline = ""
+        while Authorization.Regex not in urllib.parse.unquote(authorizationline):
+            async with aiohttp.ClientSession() as session:
+                Authorization.authdata["citizenCategory"] = citizenship
+                Authorization.Headers["X-CSRF-Token"] = "Fetch"
+                pages["ajax"] = await get_target_service_pages(session)
+                request.config.targetservicepages = pages["ajax"]
+                update_target_services(request.config.targetservicepages)
+                pages["auth"] = await get_target_authorization_pages(session)
+                request.config.targetauthpages = pages["auth"]
+                for page in request.config.targetauthpages:
+                    soup = bs4.BeautifulSoup(page["text"], "lxml")
+                    testauth = soup.select(Authorization.Element)
+                    if len(testauth) > 0:
+                        authorizationline = testauth[0].text
+                pages["target"] = await get_target_pages(
+                    session, request.config.categoriesretry
+                )
+        for listpages in pages["target"].values():
+            for page in listpages:
+                request.config.targetpagesretry.append(page)
+        get_targetdetails(
+            request.config.targetpagesretry,
+            request.config.categories,
+            request.config.categoriesretry,
+        )
+        request.config.categoriesretry, request.config.targetpagesretry = {}, []
     return request.config.categories
 
 

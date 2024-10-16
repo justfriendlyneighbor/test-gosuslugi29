@@ -7,3 +7,5 @@ def pytest_configure(config):
     config.targetservicepages = []
     config.targetauthpages = []
     config.targetpages = []
+    config.categoriesretry = {}
+    config.targetpagesretry = []
