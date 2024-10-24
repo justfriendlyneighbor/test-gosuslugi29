@@ -322,7 +322,8 @@ def test_target_details(request, alltargetdetails, allure_subtests):
                 departments[department]['failed']+=servicevalue['failed']
                 departments[department]['total']+=servicevalue['total']
         departments[department]['%']=f"{departments[department]['failed']/departments[department]['total']:.2%}" if departments[department]['total']!=0 else f"{1:.2%}"
-    pd=pandas.DataFrame(departments).T
+    sorted_departments = dict(sorted(departments.items(), key=lambda item: item[1]['total'],reverse=True))
+    pd=pandas.DataFrame(sorted_departments).T
     for target, details in alltargetdetails.items():
         urlcopy=copy.deepcopy(Target.MainPageUrl['url'])
         urlcopy['query']=[{'key':'id','value':target}]
