@@ -313,9 +313,9 @@ def test_target_details(request, alltargetdetails, allure_subtests):
                     request.config.services[service]['failed']+=1
     departments={}
     for department,values in request.config.departments.items():
-        #deplink=copy.deepcopy(Department.PageUrl['url'])
-        #deplink['query']=[{'key':'id','value':department}]
-        departments[department]={'name':values['name']}
+        deplink=copy.deepcopy(Department.PageUrl['url'])
+        deplink['query']=[{'key':'id','value':department}]
+        departments[department]={'name':values['name'],'link':buildurl(**deplink)}
         departments[department]['total'],departments[department]['failed']=0,0
         for service,servicevalue in values.items():
             if service not in ('name','total','failed'):
@@ -341,6 +341,14 @@ def test_target_details(request, alltargetdetails, allure_subtests):
                 attachment_type=allure.attachment_type.JSON,
             )
             json.dump(request.config.categories, f)
+    with allure.step(f"Прикрепить файл результатов проверок по органам"):
+        with open("results/data_department.json", "w") as f:
+            allure.attach(
+                json.dumps(request.config.departments).encode(),
+                name="All details collection per department",
+                attachment_type=allure.attachment_type.CSV,
+            )
+            json.dump(request.config.departments, f)
     with allure.step(f"Прикрепить таблицу результатов проверок по органам"):
         pd.to_csv("results/data_department.csv"),
         allure.attach(

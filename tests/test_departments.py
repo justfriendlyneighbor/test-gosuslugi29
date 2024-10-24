@@ -129,7 +129,7 @@ def test_departments(departments):
 def test_department(request, departments, check):
     for department, name in departments.items():
         with check:
-            with allure.step(f"Проверить орган {departments} ({name['name']})"):
+            with allure.step(f"Проверить орган {department} ({name['name']})"):
                 assert re.compile(Departments.Regex).match(
                     department
                 ), f'Орган {department} ({name["name"]}) не соответствует стандартному представлению'
