@@ -341,14 +341,6 @@ def test_target_details(request, alltargetdetails, allure_subtests):
                 attachment_type=allure.attachment_type.JSON,
             )
             json.dump(request.config.categories, f)
-    with allure.step(f"Прикрепить файл результатов проверок по органам"):
-        with open("results/data_department.json", "w") as f:
-            allure.attach(
-                json.dumps(request.config.departments).encode(),
-                name="All details collection per department",
-                attachment_type=allure.attachment_type.CSV,
-            )
-            json.dump(request.config.departments, f)
     with allure.step(f"Прикрепить таблицу результатов проверок по органам"):
         pd.to_csv("results/data_department.csv"),
         allure.attach(
