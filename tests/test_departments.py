@@ -133,7 +133,5 @@ def test_department(request, departments, check):
                 assert re.compile(Departments.Regex).match(
                     department
                 ), f'Орган {department} ({name["name"]}) не соответствует стандартному представлению'
-    #departments = {cat: val for cat, val in departments.items() if cat not in ["15883@egOrganization","15877@egOrganization","15680@egOrganization","15692@egOrganization","15678@egOrganization","15698@egOrganization",
-            #"15664@egOrganization","15649@egOrganization","15676@egOrganization","15692@egOrganization","15690@egOrganization","22464@egOrganization",]}
     request.config.departments = departments
     pytest.skip("Completed succesfully, skipping from report")

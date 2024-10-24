@@ -313,9 +313,9 @@ def test_target_details(request, alltargetdetails, allure_subtests):
                     request.config.services[service]['failed']+=1
     departments={}
     for department,values in request.config.departments.items():
-        deplink=copy.deepcopy(Department.PageUrl['url'])
-        deplink['query']=[{'key':'id','value':department}]
-        departments[department]={'name':values['name'],'link':buildurl(**deplink)}
+        #deplink=copy.deepcopy(Department.PageUrl['url'])
+        #deplink['query']=[{'key':'id','value':department}]
+        departments[department]={'name':values['name']}
         departments[department]['total'],departments[department]['failed']=0,0
         for service,servicevalue in values.items():
             if service not in ('name','total','failed'):
