@@ -94,7 +94,6 @@ def test_service_pages(request, service_pages, check):
 def get_serviceitargetids(pages):
     categoryservices = {}
     for category, servicepages in pages.items():
-        categoryservices.update({category: {}})
         for servicepage in servicepages:
             with allure.step(
                 f"Выделить подуслуги на странице услуги {buildurl(**servicepage['url'])}"
@@ -111,23 +110,22 @@ def get_serviceitargetids(pages):
                     ]
                     sectarg.update(
                         {
-                            sectionnames[0]: {
-                                servicetarget.attrs["data-targetid"]: {
-                                    "name": " ".join(
-                                        [
-                                            namespan.text
-                                            for namespan in servicetarget.select(
-                                                Service.ElementName
-                                            )
-                                        ]
-                                    )
-                                }
-                                for servicetarget in section.select(Service.Element)
+                            servicetarget.attrs["data-targetid"]: {
+                                "name": " ".join(
+                                    [
+                                        namespan.text
+                                        for namespan in servicetarget.select(
+                                            Service.ElementName
+                                        )
+                                    ]
+                                ),
+                                "type":sectionnames[0]
                             }
+                            for servicetarget in section.select(Service.Element)
                         }
                     )
                     sectarg["sections"].append(sectionnames)
-                categoryservices[category].update(
+                categoryservices.update(
                     {servicepage["url"]["query"][0]["value"]: sectarg}
                 )
     return categoryservices
@@ -142,13 +140,12 @@ def allserviceitargetids(request):
 @allure.title("Тест наличия групп Подуслуг по Услуге")
 @allure.description("Этот тест проверяет наличие на страницах услуг групп подуслуг")
 def test_service_section_names(allserviceitargetids, check):
-    for _, serviceids in allserviceitargetids.items():
-        for serviceid, service in serviceids.items():
-            with check:
-                with allure.step(f"Проверить количество групп услуги {serviceid}"):
-                    assert (
-                        len(service["sections"]) > 0
-                    ), f'Количество групп (электронные / неэлектронные) найденных на странице подуслуги {len(service["sections"])}'
+    for serviceid, service in allserviceitargetids.items():
+        with check:
+            with allure.step(f"Проверить количество групп услуги {serviceid}"):
+                assert (
+                    len(service["sections"]) > 0
+                ), f'Количество групп (электронные / неэлектронные) найденных на странице подуслуги {len(service["sections"])}'
     pytest.skip("Completed succesfully, skipping from report")
 
 
@@ -156,17 +153,16 @@ def test_service_section_names(allserviceitargetids, check):
 @allure.title("Тест групп Подуслуг по Услуге")
 @allure.description("Этот тест проверяет группы подуслуг на стандартное представление")
 def test_service_section_name(allserviceitargetids, check):
-    for _, serviceids in allserviceitargetids.items():
-        for serviceid, service in serviceids.items():
-            with check:
-                with allure.step(f"Проверить группы услуги {serviceid}"):
-                    assert all(
-                        [
-                            len(set(sectionname)) == 1
-                            for sectionname in service["sections"]
-                        ]
-                    ), f'У группы подуслуг (электронные / неэлектронные) обнаружено несколько названий, а именно {service["sections"]}'
-                    service.pop("sections", None)
+    for serviceid, service in allserviceitargetids.items():
+        with check:
+            with allure.step(f"Проверить группы услуги {serviceid}"):
+                assert all(
+                    [
+                        len(set(sectionname)) == 1
+                        for sectionname in service["sections"]
+                    ]
+                ), f'У группы подуслуг (электронные / неэлектронные) обнаружено несколько названий, а именно {service["sections"]}'
+                service.pop("sections", None)
     pytest.skip("Completed succesfully, skipping from report")
 
 
@@ -175,16 +171,15 @@ def test_service_section_name(allserviceitargetids, check):
 @allure.description("Этот тест проверяет подуслуги на стандартное представление")
 def test_service_target(request, allserviceitargetids, check):
     attribute = re.compile(Service.Regex)
-    for categoryid, serviceids in allserviceitargetids.items():
-        for serviceid, service in serviceids.items():
-            for _, target in service.items():
-                for targetid, targetname in target.items():
-                    with check:
-                        with allure.step(
-                            f"Проверить подуслугу {targetid} ({targetname['name']})"
-                        ):
-                            assert attribute.match(
-                                targetid
-                            ), f'Подуслуга {targetid} ({targetname["name"]}) не соответствует стандартному представлению'
-            request.config.categories[categoryid][serviceid].update(service)
+    for serviceid, targets in allserviceitargetids.items():
+        for targetid, targetname in targets.items():
+            with check:
+                with allure.step(
+                    f"Проверить подуслугу {targetid} ({targetname['name']})"
+                ):
+                    assert attribute.match(
+                        targetid
+                    ), f'Подуслуга {targetid} ({targetname["name"]}) не соответствует стандартному представлению'
+        request.config.servicetargets.update(targets)
+        request.config.services[serviceid].update(targets)
     pytest.skip("Completed succesfully, skipping from report")

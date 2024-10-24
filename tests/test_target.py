@@ -1,5 +1,5 @@
-import allure, pytest, bs4, lxml, re, json, asyncio, aiohttp, copy, urllib, pytest_aiohttp
-import config.TargetConfig as Target, config.AuthorizationConfig as Authorization
+import allure, pytest, bs4, lxml, re, json, asyncio, aiohttp, copy, urllib, pandas, pytest_aiohttp
+import config.TargetConfig as Target, config.AuthorizationConfig as Authorization, config.DepartmentConfig as Department
 from utils.utils import *
 from allure_commons.types import Severity
 
@@ -63,65 +63,42 @@ async def get_target_authorization_pages(session):
 
 
 async def get_target_pages(session, categories):
-    targetpages = {}
+    targetpages = []
+    urls = []
+    n = 50
     for category, services in categories.items():
-        thistargetpages = []
-        urls = []
-        n = 50
-        for servicename, servicevariants in services.items():
-            if servicename != "name":
-                for servicevariant, servicetargets in servicevariants.items():
-                    if servicevariant != "name":
-                        for servicetarget in servicetargets:
-                            [
-                                (
-                                    config["url"]["query"].clear(),
-                                    config["url"]["query"].extend(
-                                        [
-                                            {"key": "id", "value": servicetarget},
-                                            {
-                                                "key": "serviceId",
-                                                "value": servicename,
-                                            },
-                                        ]
-                                    ),
-                                )
-                                for config in [
-                                    Target.DetailsPageUrl,
-                                ]
-                            ]
-                            urls.extend(
-                                [
-                                    (
-                                        copy.deepcopy(Target.DetailsPageUrl),
-                                        (
-                                            category,
-                                            servicename,
-                                            servicevariant,
-                                            servicetarget,
-                                        ),
-                                    ),
-                                ]
-                            )
-        for i in range(0, len(urls), n):
-            with allure.step(
-                f"Асинхронно сделать {n} запросов с {i} по {i+n} к страницам подуслуг"
-            ):
-                tasks = [
-                    (fetch_url(session, url[0], url[1])) for url in urls[i : i + n]
-                ]
-                responses = asyncio.gather(*tasks)
-                await responses
-                for searchresponse in responses.result():
-                    thistargetpages.append(
-                        {
-                            "text": searchresponse[0],
-                            "status": searchresponse[1],
-                            "url": searchresponse[2],
-                            "service": searchresponse[3],
-                        }
-                    )
-        targetpages[category] = thistargetpages
+        [
+            (
+                config["url"]["query"].clear(),
+                config["url"]["query"].extend(
+                    [
+                        {"key": "id", "value": category},
+                    ]
+                ),
+            )
+            for config in [
+                Target.DetailsPageUrl,
+            ]
+        ]
+        urls.extend([(copy.deepcopy(Target.DetailsPageUrl),category,),])
+    for i in range(0, len(urls), n):
+        with allure.step(
+            f"Асинхронно сделать {n} запросов с {i} по {i+n} к страницам подуслуг"
+        ):
+            tasks = [
+                (fetch_url(session, url[0], url[1])) for url in urls[i : i + n]
+            ]
+            responses = asyncio.gather(*tasks)
+            await responses
+            for searchresponse in responses.result():
+                targetpages.append(
+                    {
+                        "text": searchresponse[0],
+                        "status": searchresponse[1],
+                        "url": searchresponse[2],
+                        "service": searchresponse[3],
+                    }
+                )
     return targetpages
 
 
@@ -134,7 +111,7 @@ async def target_pages(request):
         update_target_services(request.config.targetservicepages)
         pages["auth"] = await get_target_authorization_pages(session)
         request.config.targetauthpages.extend(pages["auth"])
-        pages["target"] = await get_target_pages(session, request.config.categories)
+        pages["target"] = await get_target_pages(session, request.config.servicetargets)
     return pages
 
 
@@ -220,32 +197,31 @@ def test_target_authorization_correct(target_pages, check):
 @allure.description("Этот тест проверяет доступность страниц подуслуг")
 def test_target_pages(request, target_pages, check):
     ok = 200
-    for _, pages in target_pages["target"].items():
-        for page in pages:
-            with check:
-                with allure.step(
-                    f'Проверить Запрос к странице {buildurl(**page["url"])}'
-                ):
-                    assert (
-                        page["status"] == ok
-                    ), f'Запрос к странице подуслуги {page["url"]} вернул код отличный от {ok}, а именно {page["status"]}'
-                    request.config.targetpages.append(page)
+    for page in target_pages["target"]:
+        with check:
+            with allure.step(
+                f'Проверить Запрос к странице {buildurl(**page["url"])}'
+            ):
+                assert (
+                    page["status"] == ok
+                ), f'Запрос к странице подуслуги {page["url"]} вернул код отличный от {ok}, а именно {page["status"]}'
+                request.config.targetpages.append(page)
     pytest.skip("Completed succesfully, skipping from report")
 
 
-def get_targetdetails(pages, categories, retry):
+def get_targetdetails(pages, targets, retry):
     for page in pages:
         with allure.step(
             f"Выделить параметры на странице услуги {buildurl(**page['url'])}"
         ):
-            category, service, variant, target = page["service"]
+            target = page["service"]
             asserts = []
             details = {}
             soup = bs4.BeautifulSoup(page["text"], "lxml")
             tree = lxml.etree.HTML(page["text"])
-            if variant == "Электронные услуги":
+            if targets[target]['type'] == "Электронные услуги":
                 elements = Target.OnDetailsPageConfigElements
-            elif variant == "Неэлектронные услуги":
+            elif targets[target]['type'] == "Неэлектронные услуги":
                 elements = Target.OffDetailsPageConfigElements
             else:
                 elements = []
@@ -280,29 +256,17 @@ def get_targetdetails(pages, categories, retry):
                 and details.get("Кнопка Получить/Заполнить заявление") != None
                 and len(details["Кнопка Получить/Заполнить заявление"]) == 0
             ):
-                if retry.get(category) != None:
-                    retry[category].update(
-                        {service: copy.deepcopy(categories[category][service])}
-                    )
-                else:
-                    retry.update(
-                        {
-                            category: {
-                                "name": categories[category]["name"],
-                                service: copy.deepcopy(categories[category][service]),
-                            }
-                        }
-                    )
-            categories[category][service][variant][target].update(details)
-    return categories
+                retry.update({target:targets[target]})
+            targets[target].update(details)
+    return targets
 
 
 @pytest.fixture(scope="session")
 async def alltargetdetails(request):
     get_targetdetails(
         request.config.targetpages,
-        request.config.categories,
-        request.config.categoriesretry,
+        request.config.servicetargets,
+        request.config.servicetargetsretry,
     )
     for citizenship in [Authorization.ULCategory, Authorization.IPCategory]:
         pages = {"ajax": [], "auth": [], "target": []}
@@ -322,18 +286,17 @@ async def alltargetdetails(request):
                     if len(testauth) > 0:
                         authorizationline = testauth[0].text
                 pages["target"] = await get_target_pages(
-                    session, request.config.categoriesretry
+                    session, request.config.servicetargetsretry
                 )
-        for listpages in pages["target"].values():
-            for page in listpages:
-                request.config.targetpagesretry.append(page)
+        for page in pages["target"]:
+            request.config.targetpagesretry.append(page)
         get_targetdetails(
             request.config.targetpagesretry,
-            request.config.categories,
-            request.config.categoriesretry,
+            request.config.servicetargets,
+            request.config.servicetargetsretry,
         )
-        request.config.categoriesretry, request.config.targetpagesretry = {}, []
-    return request.config.categories
+        request.config.servicetargetsretry, request.config.targetpagesretry = {}, []
+    return request.config.servicetargets
 
 
 @allure.severity(Severity.NORMAL)
@@ -342,23 +305,54 @@ async def alltargetdetails(request):
     "Этот тест проверяет наличие на страницах подуслуг проверяемых параметров"
 )
 def test_target_details(request, alltargetdetails, allure_subtests):
-    for categoryid, serviceids in alltargetdetails.items():
-        for serviceid, servicevariants in serviceids.items():
-            if serviceid != "name":
-                for servicevariant, targets in servicevariants.items():
-                    if servicevariant != "name":
-                        for target, details in targets.items():
-                            with allure_subtests.test(
-                                subtest_name=f"Проверка подуслуги {target} ({details['name']}) услуги {serviceid} ({servicevariants['name']}) {'успешна' if details['assert']==True else f'неуспешна, не соответствуют пункты: {*[detailname for detailname,detailcontent in details.items() if detailcontent==[]],}'}"
-                            ):
-                                assert details[
-                                    "assert"
-                                ], f'На странице {target} ({details["name"]}) не соответствуют пункты: {*[detailname for detailname,detailcontent in details.items() if detailcontent==[]],}'
+    for service,values in request.config.services.items():
+        request.config.services[service]['total'],request.config.services[service]['failed']=len(values)-1,0
+        for servicevarinat,varval in values.items():
+            if servicevarinat not in ('name','total','failed'):
+                if varval['assert']==False:
+                    request.config.services[service]['failed']+=1
+    departments={}
+    for department,values in request.config.departments.items():
+        deplink=copy.deepcopy(Department.PageUrl['url'])
+        deplink['query']=[{'key':'id','value':department}]
+        departments[department]={'name':values['name'],'link':buildurl(**deplink)}
+        departments[department]['total'],departments[department]['failed']=0,0
+        for service,servicevalue in values.items():
+            if service not in ('name','total','failed'):
+                departments[department]['failed']+=servicevalue['failed']
+                departments[department]['total']+=servicevalue['total']
+        departments[department]['%']=f"{departments[department]['failed']/departments[department]['total']:.2%}" if departments[department]['total']!=0 else f"{1:.2%}"
+    pd=pandas.DataFrame(departments).T
+    for target, details in alltargetdetails.items():
+        urlcopy=copy.deepcopy(Target.MainPageUrl['url'])
+        urlcopy['query']=[{'key':'id','value':target}]
+        with allure_subtests.test(
+            subtest_name=f"Проверка подуслуги {buildurl(**urlcopy)} ({details['name']}) {'успешна' if details['assert']==True else f'неуспешна, не соответствуют пункты: {*[detailname for detailname,detailcontent in details.items() if detailcontent==[]],}'}"
+        ):
+            with allure.step(f"Проверка подуслуги {buildurl(**urlcopy)} ({details['name']}) {'успешна' if details['assert']==True else f'неуспешна, не соответствуют пункты: {*[detailname for detailname,detailcontent in details.items() if detailcontent==[]],}'}"):
+                assert details[
+                    "assert"
+                ], f'На странице {buildurl(**urlcopy)} ({details["name"]}) не соответствуют пункты: {*[detailname for detailname,detailcontent in details.items() if detailcontent==[]],}'
     with allure.step(f"Прикрепить файл результатов всех проверок"):
-        with open("results/data.json", "w") as f:
+        with open("results/data_category.json", "w") as f:
             allure.attach(
                 json.dumps(request.config.categories).encode(),
-                name="All details collection",
+                name="All details collection per category",
                 attachment_type=allure.attachment_type.JSON,
             )
             json.dump(request.config.categories, f)
+    with allure.step(f"Прикрепить файл результатов проверок по органам"):
+        with open("results/data_department.json", "w") as f:
+            allure.attach(
+                json.dumps(request.config.departments).encode(),
+                name="All details collection per department",
+                attachment_type=allure.attachment_type.CSV,
+            )
+            json.dump(request.config.departments, f)
+    with allure.step(f"Прикрепить таблицу результатов проверок по органам"):
+        pd.to_csv("results/data_department.csv"),
+        allure.attach(
+            pd.to_csv(),
+            name="All details collection per department",
+            attachment_type=allure.attachment_type.CSV,
+        )

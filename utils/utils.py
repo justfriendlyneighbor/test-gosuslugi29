@@ -34,6 +34,18 @@ def is_json(myjson):
         return False
     return True
 
+def gen_dict_extract(var, key):
+    if hasattr(var,'items'): # hasattr(var,'items') for python 3
+        for k, v in var.items(): # var.items() for python 3
+            if k == key:
+                yield v
+            if isinstance(v, dict):
+                for result in gen_dict_extract(v, key):
+                    yield result
+            elif isinstance(v, list):
+                for d in v:
+                    for result in gen_dict_extract(d, key):
+                        yield result
 
 async def fetch_url(session, req, data=None):
     try:

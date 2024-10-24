@@ -27,5 +27,6 @@ SearchUrl = {
     "ssl": False,
 }
 Element = 'div[class~="t-modal-layout-item"]'
+NameElement = 'h2>span>span[class="js-word"]'
 Attribute = "data-objid"
 Regex = r"\d+@egClassification"
