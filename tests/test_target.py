@@ -320,8 +320,8 @@ def test_target_details(request, alltargetdetails, allure_subtests):
                         if targetvalue['type']=="Электронные услуги":
                             departments[name]['Электронных']+=1
                 departments[name]['Всего подуслуг']+=len(servicevalue)-1
-        departments[name]['% успешных']=f"{1-(departments[name]['failed']/departments[name]['total']):.2%}" if departments[name]['total']!=0 else f"{1:.2%}"
-    sorted_departments = dict(sorted(departments.items(), key=lambda item: item[1]['total'],reverse=True))
+        departments[name]['% успешных']=f"{1-(departments[name]['Неуспешных']/departments[name]['Всего подуслуг']):.2%}" if departments[name]['Всего подуслуг']!=0 else f"{1:.2%}"
+    sorted_departments = dict(sorted(departments.items(), key=lambda item: item[1]['Всего подуслуг'],reverse=True))
     pd=pandas.DataFrame(sorted_departments).T
     for target, details in alltargetdetails.items():
         urlcopy=copy.deepcopy(Target.MainPageUrl['url'])
