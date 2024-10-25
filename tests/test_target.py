@@ -305,23 +305,22 @@ async def alltargetdetails(request):
     "Этот тест проверяет наличие на страницах подуслуг проверяемых параметров"
 )
 def test_target_details(request, alltargetdetails, allure_subtests):
-    for service,values in request.config.services.items():
-        request.config.services[service]['total'],request.config.services[service]['failed']=len(values)-1,0
-        for servicevarinat,varval in values.items():
-            if servicevarinat not in ('name','total','failed'):
-                if varval['assert']==False:
-                    request.config.services[service]['failed']+=1
     departments={}
     for department,values in request.config.departments.items():
+        name=values['name']
         deplink=copy.deepcopy(Department.PageUrl['url'])
         deplink['query']=[{'key':'id','value':department}]
-        departments[department]={'name':values['name'],'link':buildurl(**deplink)}
-        departments[department]['total'],departments[department]['failed']=0,0
+        departments[name]={'Ссылка':buildurl(**deplink),'Всего подуслуг':0,'Электронных':0,'Неуспешных':0,}
         for service,servicevalue in values.items():
-            if service not in ('name','total','failed'):
-                departments[department]['failed']+=servicevalue['failed']
-                departments[department]['total']+=servicevalue['total']
-        departments[department]['%']=f"{departments[department]['failed']/departments[department]['total']:.2%}" if departments[department]['total']!=0 else f"{1:.2%}"
+            if service!='name':
+                for target,targetvalue in servicevalue.items():
+                    if target!='name':
+                        if targetvalue['assert']==False:
+                            departments[name]['Неуспешных']+=1
+                        if targetvalue['type']=="Электронные услуги":
+                            departments[name]['Электронных']+=1
+                departments[name]['Всего подуслуг']+=len(servicevalue)-1
+        departments[name]['% успешных']=f"{1-(departments[name]['failed']/departments[name]['total']):.2%}" if departments[name]['total']!=0 else f"{1:.2%}"
     sorted_departments = dict(sorted(departments.items(), key=lambda item: item[1]['total'],reverse=True))
     pd=pandas.DataFrame(sorted_departments).T
     for target, details in alltargetdetails.items():
@@ -347,7 +346,7 @@ def test_target_details(request, alltargetdetails, allure_subtests):
             allure.attach(
                 json.dumps(request.config.departments).encode(),
                 name="All details collection per department",
-                attachment_type=allure.attachment_type.CSV,
+                attachment_type=allure.attachment_type.JSON,
             )
             json.dump(request.config.departments, f)
     with allure.step(f"Прикрепить таблицу результатов проверок по органам"):
