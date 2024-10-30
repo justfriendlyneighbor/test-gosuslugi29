@@ -234,6 +234,8 @@ def get_targetdetails(pages, targets, retry):
                 and len(details["Кнопка Получить/Заполнить заявление"]) == 0
             ):
                 retry.update({target: targets[target]})
+            elif target in retry:
+                retry.pop(target)
             targets[target].update(details)
     return targets
 
@@ -269,12 +271,12 @@ def count_department_services(departmentsconfig):
                     if fail==0:
                         departments[name][partel][1]+=1
         departments[name][perc] = (
-            f"{1-((departments[name][totel][1]+departments[name][partel][1]+departments[name][notel][1])/departments[name][totl]):.2%}"
+            f"{((departments[name][totel][1]+departments[name][partel][1]+departments[name][notel][1])/departments[name][totl]):.2%}"
             if departments[name][totl] != 0
             else f"{1:.2%}"
         )
         for elname in [totel,partel,notel]:
-            departments[name][elname]=f'{departments[name][elname][0]}, '+(f'{1-(departments[name][elname][1]/departments[name][elname][0]):.2%}'if departments[name][elname][0] != 0 else f"{1:.2%}")
+            departments[name][elname]=f'{departments[name][elname][0]}, '+(f'{(departments[name][elname][1]/departments[name][elname][0]):.2%}'if departments[name][elname][0] != 0 else f"{1:.2%}")
     sorted_departments = dict(
         sorted(
             departments.items(),
