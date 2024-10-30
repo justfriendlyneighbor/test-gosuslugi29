@@ -1,14 +1,9 @@
-import urllib.parse, json
+import urllib.parse, json, utils.utils as utils
 
-AjaxUrl = {
-    "protocol": "https",
-    "host": "gosuslugi29.ru",
-    "path": ["util", "ajaxRpc.sx"],
-}
-token = ""
 FLCategory = "FL"
 ULCategory = "UL"
 IPCategory = "IP"
+citizenCategory=[FLCategory,ULCategory,IPCategory]
 authdata = {
     "citizenCategory": FLCategory,
     "authType": "PWD",
@@ -31,61 +26,6 @@ authdata = {
     "assuranceLevel": "AL20",
     "_t": "",
 }
-CSRF = "Fetch"
-Headers = {"content-type": "text/plain", "X-CSRF-Token": CSRF}
-ListMethods = {
-    "method": "GET",
-    "url": {
-        **AjaxUrl,
-        "query": [
-            {
-                "key": "v",
-                "value": urllib.parse.quote(
-                    '{"id":1, method:"system.listMethods", "params":[]}'
-                ),
-            }
-        ],
-    },
-    "headers": Headers,
-    "ssl": False,
-}
-TokenEnabledUrl = {
-    "method": "POST",
-    "url": {
-        **AjaxUrl,
-        "query": [{"key": "_", "value": "securitypreventiontoken.isEnabled"}],
-    },
-    "data": json.dumps(
-        {"method": "securitypreventiontoken.isEnabled", "params": [], "id": 2}
-    ),
-    "headers": Headers,
-    "ssl": False,
-}
-RestTokenUrl = {
-    "method": "POST",
-    "url": {
-        **AjaxUrl,
-        "query": [{"key": "_", "value": "securitypreventiontoken.getRestToken"}],
-    },
-    "data": json.dumps(
-        {"method": "securitypreventiontoken.getRestToken", "params": [], "id": 3}
-    ),
-    "headers": Headers,
-    "ssl": False,
-}
-TokenUrl = {
-    "method": "POST",
-    "url": {
-        **AjaxUrl,
-        "query": [{"key": "_", "value": "securitypreventiontoken.getToken"}],
-    },
-    "data": json.dumps(
-        {"method": "securitypreventiontoken.getToken", "params": [], "id": 3}
-    ),
-    "headers": Headers,
-    "ssl": False,
-}
-AuthorizationServiceMethods = [ListMethods, TokenEnabledUrl, RestTokenUrl, TokenUrl]
 AuthUrl = {
     "method": "POST",
     "url": {

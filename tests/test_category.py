@@ -1,96 +1,28 @@
-import allure, pytest, bs4, re, json, asyncio, aiohttp, copy, functools, pytest_aiohttp, functools, itertools
-import config.CategoryConfig as Category
-from utils.utils import *
+import allure, pytest, bs4, re, json, asyncio, aiohttp, functools, pytest_aiohttp, functools, itertools
+import config.CategoryConfig as Category, utils.utils as utils
 from allure_commons.types import Severity
-
-
-async def get_category_service_pages(session):
-    ajaxpages = []
-    for ConfigUrl in Category.CategoryServiceMethods:
-        UrlPart = ConfigUrl.pop("url")
-        with allure.step(
-            f"Асинхронно сделать запрос к вспомогательной странице {buildurl(**UrlPart)}"
-        ):
-            ajaxresponse = await session.request(**ConfigUrl, url=buildurl(**UrlPart))
-            ConfigUrl["url"] = UrlPart
-            ajaxresponsetext = await ajaxresponse.text()
-            ajaxpages.append(
-                {
-                    "status": ajaxresponse.status,
-                    "text": ajaxresponsetext,
-                    "url": buildurl(**UrlPart),
-                }
-            )
-    return ajaxpages
-
-
-def update_category_services(pages):
-    CSRFpattern = re.compile(r"\w{32}")
-    for catalogpage in pages:
-        with allure.step(f"Найти CSRF-токен {catalogpage['url']}"):
-            if is_json(catalogpage["text"]):
-                jsonres = json.loads(catalogpage["text"])
-                if "result" in jsonres and isinstance(jsonres["result"], str):
-                    if CSRFpattern.match(jsonres["result"]):
-                        Category.Headers["X-CSRF-Token"] = jsonres["result"]
-
-
-async def get_category_pages(session, categories):
-    categorypages = []
-    for category, _ in categories.items():
-        loadmore = True
-        loadmoreelement = []
-        f = 1
-        with allure.step(f"Асинхронно сделать запрос к странице категории {category}"):
-            while loadmore:
-                copys = []
-                for _ in range(7):
-                    Category.PubBlockUrl["data"] = json.loads(
-                        Category.PubBlockUrl["data"]
-                    )
-                    Category.PubBlockUrl["data"]["params"][2]["map"] = {
-                        "f": f,
-                        "category": category,
-                        "g": "tiles",
-                        "isTemplate": "24326@egClassification",
-                        "id": category,
-                    }
-                    Category.PubBlockUrl["data"] = json.dumps(
-                        Category.PubBlockUrl["data"]
-                    )
-                    copys.append(copy.deepcopy(Category.PubBlockUrl))
-                    f += 12
-                tasks = [(fetch_url(session, url)) for url in copys]
-                responses = asyncio.gather(*tasks)
-                await responses
-                for searchresponse in responses.result():
-                    try:
-                        categorypages.append(
-                            {
-                                "status": searchresponse[1],
-                                "text": searchresponse[0],
-                                "url": searchresponse[2],
-                                "category": category,
-                            }
-                        )
-                        soup = bs4.BeautifulSoup(searchresponse[0], "lxml")
-                        loadmoreelement.append(
-                            len(soup.select(Category.LoadMoreElement)) != 0
-                        )
-                    except Exception as e:
-                        print(e.message)
-                loadmore = all(loadmoreelement)
-    return categorypages
-
 
 @pytest.fixture(scope="session")
 async def category_pages(request):
     pages = {"ajax": [], "category": []}
     async with aiohttp.ClientSession() as session:
-        pages["ajax"] = await get_category_service_pages(session)
-        request.config.categoryservicepages.extend(pages["ajax"])
-        update_category_services(request.config.categoryservicepages)
-        pages["category"] = await get_category_pages(session, request.config.categories)
+        pages["ajax"] = await utils.get_service_pages(
+            session, utils.RestServiceMethods
+        )
+        utils.update_services(pages["ajax"], utils.Headers)
+        pages["category"] = await utils.get_pubblockurl_pages(
+            session,
+            request.config.categories,
+            {
+                "f": "",
+                "g": "tiles",
+                "isTemplate": "24326@egClassification",
+                "id": "",
+                "category": "",
+                "name": "category",
+                "link": "pgu/categories/info/showmore"
+            },
+        )
     return pages
 
 
@@ -114,10 +46,11 @@ def test_category_service_pages(request, category_pages, check):
 @allure.title("Тест получения токена для Категорий")
 @allure.description("Этот тест проверяет получение токена для доступа к категориям")
 def test_category_services():
-    with allure.step(f"Проверить CSRF-токен {Category.Headers['X-CSRF-Token']}"):
+    with allure.step(f"Проверить CSRF-токен {utils.Headers['X-CSRF-Token']}"):
         assert (
-            Category.Headers["X-CSRF-Token"] != "Fetch"
-        ), f"Не удалось получить CSRF-токен, список заголовков - {Category.Headers}"
+            utils.Headers["X-CSRF-Token"] != "Fetch"
+        ), f"Не удалось получить CSRF-токен, список заголовков - {utils.Headers}"
+    utils.Headers["X-CSRF-Token"] = "Fetch"
     pytest.skip("Completed succesfully, skipping from report")
 
 
@@ -128,10 +61,10 @@ def test_category_pages(request, category_pages, check):
     ok = 200
     for page in category_pages["category"]:
         with check:
-            with allure.step(f'Проверить Запрос к странице {buildurl(**page["url"])}'):
+            with allure.step(f'Проверить Запрос к странице {utils.buildurl(**page["url"])}'):
                 assert (
                     page["status"] == ok
-                ), f'Запрос к поиску по странице категории {buildurl(**page["url"])} вернул код отличный от {ok}, а именно {page["status"]}'
+                ), f'Запрос к поиску по странице категории {utils.buildurl(**page["url"])} вернул код отличный от {ok}, а именно {page["status"]}'
                 request.config.categorypages.append(page)
     pytest.skip("Completed succesfully, skipping from report")
 
@@ -140,40 +73,26 @@ def get_serviceids(pages):
     serviceids = {}
     for categorypage in pages:
         with allure.step(
-            f"Выделить услуги на странице категорий {buildurl(**categorypage['url'])}"
+            f"Выделить услуги на странице {utils.buildurl(**categorypage['url'])}"
         ):
-            if is_json(categorypage["text"]):
+            if utils.is_json(categorypage["text"]):
                 soup = bs4.BeautifulSoup(
                     json.loads(categorypage["text"])["result"], "lxml"
                 )
             else:
                 soup = bs4.BeautifulSoup(categorypage["text"], "lxml")
-            if serviceids.get(categorypage["category"]) == None:
-                serviceids[categorypage["category"]] = {
-                    service.attrs["data-pgu-service"]: {
-                        "name": " ".join(
-                            [
-                                title.text
-                                for title in service.select('span[class="js-word"]')
-                            ]
-                        )
-                    }
-                    for service in soup.select(Category.Element)
+            serviceattrs = {
+                service.attrs[Category.Attribute]: {
+                    "name": " ".join(
+                        [title.text for title in service.select(Category.ElementName)]
+                    )
                 }
+                for service in soup.select(Category.Element)
+            }
+            if serviceids.get(categorypage["lst"]) == None:
+                serviceids[categorypage["lst"]] = serviceattrs
             else:
-                serviceids[categorypage["category"]].update(
-                    {
-                        service.attrs["data-pgu-service"]: {
-                            "name": " ".join(
-                                [
-                                    title.text
-                                    for title in service.select('span[class="js-word"]')
-                                ]
-                            )
-                        }
-                        for service in soup.select(Category.Element)
-                    }
-                )
+                serviceids[categorypage["lst"]].update(serviceattrs)
     with allure.step(f"Отфильтровать услуги"):
         unique = functools.reduce(
             set.union,
@@ -196,7 +115,7 @@ def get_serviceids(pages):
 
 @pytest.fixture
 def allserviceids(request):
-    return get_serviceids(request.config.categorypages)
+    return utils.get_ids(request.config.categorypages,Category)
 
 
 @allure.severity(Severity.BLOCKER)

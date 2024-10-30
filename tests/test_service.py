@@ -1,15 +1,13 @@
 import allure, pytest, bs4, re, asyncio, aiohttp, pytest_aiohttp
-import config.ServiceConfig as Service
-from utils.utils import *
+import config.ServiceConfig as Service, utils.utils as utils
 from allure_commons.types import Severity
 
 
-async def get_service_pages(session, categories):
-    servicepages = {}
-    for category, services in categories.items():
-        thisservicepages = []
+async def get_service_pages(session, services):
+    servicepages, urls = [], []
+    for service in services:
         n = 100
-        urls = [
+        urls.append(
             [
                 {
                     key: (
@@ -24,49 +22,44 @@ async def get_service_pages(session, categories):
                 },
                 False,
             ]
-            for service in services
-            if service != "name"
-        ]
-        while not all([url[1] for url in urls]):
-            for i in range(0, len(urls), n):
-                with allure.step(
-                    f"Асинхронно сделать {n} запросов с {i} по {i+n} к страницам категории {category}"
-                ):
-                    tasks = [
-                        (fetch_url(session, url[0], url)) for url in urls[i : i + n]
-                    ]
-                    responses = asyncio.gather(*tasks)
-                    await responses
-                    for searchresponse in responses.result():
-                        try:
-                            assert searchresponse[1] == 200
-                            soup = bs4.BeautifulSoup(searchresponse[0], "lxml")
-                            serviceid = [
-                                servicetarget.attrs["data-serviceid"]
-                                for servicetarget in soup.select(Service.Element)
-                            ]
-                            assert len(set(serviceid)) == 1
-                            thisservicepages.append(
-                                {
-                                    "status": searchresponse[1],
-                                    "soup": soup,
-                                    "url": searchresponse[2],
-                                    "service": searchresponse[3],
-                                }
-                            )
-                        except AssertionError:
-                            continue
-                        searchresponse[3][1] = True
-            urls = list(filter(lambda x: not x[1], urls))
-        servicepages[category] = thisservicepages
+        )
+    while not all([url[1] for url in urls]):
+        for i in range(0, len(urls), n):
+            with allure.step(
+                f"Асинхронно сделать {n} запросов с {i} по {i+n} к страницам услуг"
+            ):
+                tasks = [(utils.fetch_url(session, url[0], url)) for url in urls[i : i + n]]
+                responses = asyncio.gather(*tasks)
+                await responses
+                for searchresponse in responses.result():
+                    try:
+                        assert searchresponse[1] == 200
+                        soup = bs4.BeautifulSoup(searchresponse[0], "lxml")
+                        serviceid = [
+                            servicetarget.attrs[Service.ElementService]
+                            for servicetarget in soup.select(Service.Element)
+                        ]
+                        assert len(set(serviceid)) == 1
+                        servicepages.append(
+                            {
+                                "status": searchresponse[1],
+                                "soup": soup,
+                                "url": searchresponse[2],
+                                "service": searchresponse[3],
+                            }
+                        )
+                    except AssertionError:
+                        continue
+                    searchresponse[3][1] = True
+        urls = list(filter(lambda x: not x[1], urls))
     return servicepages
 
 
 @pytest.fixture(scope="session")
 async def service_pages(request):
-    pages = {}
+    pages = []
     async with aiohttp.ClientSession() as session:
-        pages = await get_service_pages(session, request.config.categories)
+        pages = await get_service_pages(session, request.config.services)
     return pages
 
 
@@ -75,59 +68,48 @@ async def service_pages(request):
 @allure.description("Этот тест проверяет доступность страниц услуг")
 def test_service_pages(request, service_pages, check):
     ok = 200
-    for category, pages in service_pages.items():
-        for page in pages:
-            with check:
-                with allure.step(
-                    f'Проверить Запрос к странице {buildurl(**page["url"])}'
-                ):
-                    assert (
-                        page["status"] == ok
-                    ), f'Запрос к поиску по странице категории {buildurl(**page["url"])} вернул код отличный от {ok}, а именно {page["status"]}'
-                    if request.config.servicepages.get(category) == None:
-                        request.config.servicepages[category] = [page]
-                    else:
-                        request.config.servicepages[category].append(page)
+    for page in service_pages:
+        with check:
+            with allure.step(f'Проверить Запрос к странице {utils.buildurl(**page["url"])}'):
+                assert (
+                    page["status"] == ok
+                ), f'Запрос к поиску по странице категории {utils.buildurl(**page["url"])} вернул код отличный от {ok}, а именно {page["status"]}'
+                request.config.servicepages.append(page)
     pytest.skip("Completed succesfully, skipping from report")
 
 
 def get_serviceitargetids(pages):
     categoryservices = {}
-    for category, servicepages in pages.items():
-        for servicepage in servicepages:
-            with allure.step(
-                f"Выделить подуслуги на странице услуги {buildurl(**servicepage['url'])}"
-            ):
-                soup = servicepage["soup"]
-                sections = [
-                    category for category in soup.select(Service.CategoryElement)
+    for servicepage in pages:
+        with allure.step(
+            f"Выделить подуслуги на странице услуги {utils.buildurl(**servicepage['url'])}"
+        ):
+            soup = servicepage["soup"]
+            sections = [category for category in soup.select(Service.SectionElement)]
+            sectarg = {"sections": []}
+            for section in sections:
+                sectionnames = [
+                    sectionname.text
+                    for sectionname in section.select(Service.SectionName)
                 ]
-                sectarg = {"sections": []}
-                for section in sections:
-                    sectionnames = [
-                        sectionname.text
-                        for sectionname in section.select(Service.CategoryName)
-                    ]
-                    sectarg.update(
-                        {
-                            servicetarget.attrs["data-targetid"]: {
-                                "name": " ".join(
-                                    [
-                                        namespan.text
-                                        for namespan in servicetarget.select(
-                                            Service.ElementName
-                                        )
-                                    ]
-                                ),
-                                "type":sectionnames[0]
-                            }
-                            for servicetarget in section.select(Service.Element)
+                sectarg.update(
+                    {
+                        servicetarget.attrs[Service.ElementTarget]: {
+                            "name": " ".join(
+                                [
+                                    namespan.text
+                                    for namespan in servicetarget.select(
+                                        Service.ElementName
+                                    )
+                                ]
+                            ),
+                            "type": sectionnames[0],
                         }
-                    )
-                    sectarg["sections"].append(sectionnames)
-                categoryservices.update(
-                    {servicepage["url"]["query"][0]["value"]: sectarg}
+                        for servicetarget in section.select(Service.Element)
+                    }
                 )
+                sectarg["sections"].append(sectionnames)
+            categoryservices.update({servicepage["url"]["query"][0]["value"]: sectarg})
     return categoryservices
 
 
@@ -157,10 +139,7 @@ def test_service_section_name(allserviceitargetids, check):
         with check:
             with allure.step(f"Проверить группы услуги {serviceid}"):
                 assert all(
-                    [
-                        len(set(sectionname)) == 1
-                        for sectionname in service["sections"]
-                    ]
+                    [len(set(sectionname)) == 1 for sectionname in service["sections"]]
                 ), f'У группы подуслуг (электронные / неэлектронные) обнаружено несколько названий, а именно {service["sections"]}'
                 service.pop("sections", None)
     pytest.skip("Completed succesfully, skipping from report")

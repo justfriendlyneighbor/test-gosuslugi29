@@ -26,6 +26,7 @@ SearchUrl = {
     "headers": Headers,
     "ssl": False,
 }
+CategoriesServiceMethods = [PageUrl, SearchUrl]
 Element = 'div[class~="t-modal-layout-item"]'
 NameElement = 'h2>span>span[class="js-word"]'
 Attribute = "data-objid"

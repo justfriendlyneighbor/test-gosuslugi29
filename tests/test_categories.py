@@ -1,27 +1,14 @@
 import allure, pytest, bs4, re, aiohttp, pytest_aiohttp
-import config.CategoriesConfig as Categories
-from utils.utils import *
+import config.CategoriesConfig as Categories, utils.utils as utils
 from allure_commons.types import Severity
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def categories_pages(request):
+    pages = []
     async with aiohttp.ClientSession() as session:
-        categoriespages = []
-        for category in [Categories.PageUrl, Categories.SearchUrl]:
-            UrlPart = category.pop("url")
-            with allure.step(f"Открыть страницу категорий {buildurl(**UrlPart)}"):
-                response = await session.request(**category, url=buildurl(**UrlPart))
-                category["url"] = UrlPart
-                responsetext = await response.text()
-                categoriespages.append(
-                    {
-                        "status": response.status,
-                        "text": responsetext,
-                        "url": buildurl(**UrlPart),
-                    }
-                )
-        return categoriespages
+        pages = await utils.get_service_pages(session, Categories.CategoriesServiceMethods)
+    return pages
 
 
 @allure.severity(Severity.BLOCKER)
@@ -47,10 +34,7 @@ def get_all_categories(pages):
             categoryids = {
                 category.attrs[Categories.Attribute]: {
                     "name": " ".join(
-                        [
-                            span.text
-                            for span in category.select(Categories.NameElement)
-                        ]
+                        [span.text for span in category.select(Categories.NameElement)]
                     )
                 }
                 for category in categories

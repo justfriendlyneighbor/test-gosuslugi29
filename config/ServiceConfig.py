@@ -10,8 +10,10 @@ PageUrl = {
     "headers": Headers,
     "ssl": False,
 }
-CategoryElement = 'section[class~="b-basic-list"]'
-CategoryName = 'h3[class~="b-basic-list-title"]'
+SectionElement = 'section[class~="b-basic-list"]'
+SectionName = 'h3[class~="b-basic-list-title"]'
+ElementService = "data-serviceid"
+ElementTarget = "data-targetid"
 Element = 'a[class~="service-procedure-title"]'
 ElementName = 'span[class~="service-procedure-target-link"]'
 Regex = r"\d+@egServiceTarget"
