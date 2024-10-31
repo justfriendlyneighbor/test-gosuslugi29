@@ -71,13 +71,21 @@ async def get_target_pages(session, targets):
 
 async def call_pages(targets):
     pages = {"ajax": [], "auth": [], "target": []}
-    async with aiohttp.ClientSession() as session:
-        pages["ajax"] = await utils.get_service_pages(session, utils.AuthorizationServiceMethods)
-        utils.update_services(pages["ajax"],utils.Headers)
-        Authorization.authdata["_t"] = utils.Headers["X-CSRF-Token"]
-        Authorization.AuthUrl["url"]["query"][0]["value"] = utils.Headers["X-CSRF-Token"]
-        pages["auth"] = await get_target_authorization_pages(session)
-        pages["target"] = await get_target_pages(session, targets)
+    setup=True
+    while setup:
+        async with aiohttp.ClientSession() as session:
+            pages["ajax"] = await utils.get_service_pages(session, utils.AuthorizationServiceMethods)
+            utils.update_services(pages["ajax"],utils.Headers)
+            Authorization.authdata["_t"] = utils.Headers["X-CSRF-Token"]
+            Authorization.AuthUrl["url"]["query"][0]["value"] = utils.Headers["X-CSRF-Token"]
+            pages["auth"] = await get_target_authorization_pages(session)
+            for page in pages["auth"]:
+                soup = bs4.BeautifulSoup(page["text"], "lxml")
+                testauth = soup.select(Authorization.Element)
+            if len(set(testauth)) != 1:
+                continue
+            pages["target"] = await get_target_pages(session, targets)
+            setup=False
     return pages
 
 @pytest.fixture(scope="session")
@@ -196,6 +204,9 @@ def get_targetdetails(pages, targets, retry):
             details = {}
             soup = bs4.BeautifulSoup(page["text"], "lxml")
             tree = lxml.etree.HTML(page["text"])
+            if tree==None or soup==None:
+                soup = bs4.BeautifulSoup(page["text"], "html5lib")
+                tree = lxml.etree.HTML(str(soup))
             if targets[target]["type"] == "Электронные услуги":
                 elements = Target.OnDetailsPageConfigElements
             elif targets[target]["type"] == "Неэлектронные услуги":
